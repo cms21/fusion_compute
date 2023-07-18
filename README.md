@@ -34,6 +34,7 @@ There are two ways to start the flow.
 ### 3a. CLI
 Start the flow by typing at the command line:
 ```
+export $(cat fusion.env | xargs)
 globus flows start --input input.json ${GLOBUS_FLOW_ID}
 ```
 ### 3b. Python
