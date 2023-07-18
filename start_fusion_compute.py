@@ -1,18 +1,19 @@
 from globus_automate_client import create_flows_client
 from dotenv import load_dotenv
-import os, json
+import os, json, time
 
 load_dotenv(dotenv_path="./fusion.env")
 flow_id = os.getenv("GLOBUS_FLOW_ID")
 
-def run_flow(flow_input,monitor=True):
+def run_flow(flow_input, monitor=True):
+
     fc = create_flows_client()
 
     flow = fc.get_flow(flow_id)
     flow_scope = flow['globus_auth_scope']
-    
+    flow_action = fc.run_flow(flow_id, flow_scope, flow_input)
+
     if monitor:
-        flow_action = fc.run_flow(flow_id,flow_scope, flow_input)
         flow_action_id = flow_action['action_id']
         flow_status = flow_action['status']
         print(f'Flow action started with id: {flow_action_id}')
@@ -25,5 +26,7 @@ def run_flow(flow_input,monitor=True):
     return
 
 if __name__ == '__main__':
+
+
     flow_input = json.load("./input.json")
     run_flow(flow_input)
