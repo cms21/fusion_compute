@@ -4,7 +4,8 @@ Scripts to deploy fusion application on ALCF systems with Globus Flows
 ## Setup on Polaris
 First login to Polaris and do the following things:
 ### 1. Create an environment and install necessary packages
-```module load conda
+```
+module load conda
 conda create fusion_flow
 conda activate fusion_flow
 pip install globus_automate_client globus_compute_sdk
