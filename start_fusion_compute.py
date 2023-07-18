@@ -27,6 +27,5 @@ def run_flow(flow_input, monitor=True):
 
 if __name__ == '__main__':
 
-
-    flow_input = json.load("./input.json")
-    run_flow(flow_input)
+    flow_input = json.load(open("./input.json"))
+    run_flow(flow_input,monitor=False)

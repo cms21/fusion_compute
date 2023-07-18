@@ -6,12 +6,20 @@ First login to Polaris and do the following things:
 ### 1. Create an environment and install necessary packages
 ```
 module load conda
-conda create fusion_flow
-conda activate fusion_flow
-pip install globus_automate_client globus_compute_sdk
+conda create fusion python==3.9
+conda activate fusion
+pip install globus-compute-endpoint
+pip install globus-automate-client
 ```
 ### 2. Create a Globus Endpoint
-You need to choose a target queue for your workflow.  Use the provided `endpoint_config` as a model (replace your project name etc.)
+Use the provided `config.yml_template` as a model to configure your endpoint. Edit it to replace your project name, environment name, etc.  Then do:
+
+```
+globus-compute-endpoint config <YOUR_ENDPOINT_NAME>
+cp config.yml_template ~/.globus_compute/<YOUR_ENDPOINT_NAME>/config.yml
+globus-compute-endpoint start <YOUR_ENDPOINT_NAME>
+globous-compute-endpoint list
+```
 
 Copy the endpoint ID for the next step.
 
@@ -23,12 +31,15 @@ Paste the enpoint ID into `fusion.env_template` and copy it to `fusion.env`.
 cp fusion.env_template fusion.env
 ```
 ### 1.1 Make an environment and install globus
+TBD, need to figure this out on Iris.
+
 ### 2. Run the setup script
 ```
 python setup_fusion_flow.py
 ```
 
-This should create a new file `input.json` and modify `fusion.env` by adding some new environment variables
+This should create a new file `input.json` and modify `fusion.env` by adding some new environment variables containing the IDs of the flow and function.
+
 ### 3. Run the flow
 There are two ways to start the flow.
 ### 3a. CLI
