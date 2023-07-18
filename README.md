@@ -29,7 +29,7 @@ python setup_fusion_flow.py
 
 This should create a new file `input.json` and modify `fusion.env` by adding some new environment variables
 ### 3. Run the flow
-There are two ways to starat the flow.
+There are two ways to start the flow.
 ### 3a. CLI
 Start the flow by typing at the command line:
 ```
@@ -41,4 +41,4 @@ Alternatively, you can start the flow using the python script:
 python start_fusion_compute.py
 ```
 
-Both of these approaches will transfer a file and run the fusion application once.  Do run this sequence of actions repeatedly, you can call the CLI command from a bash script in a loop or call the python call from a python script in a loop.
+Both of these approaches will transfer a file and run the fusion application once.  To run this sequence of actions repeatedly, you can call the CLI command from a bash script in a loop or call the python call from a python script in a loop.
