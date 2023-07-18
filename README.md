@@ -6,7 +6,7 @@ First login to Polaris and do the following things:
 ### 1. Create an environment and install necessary packages
 ```
 module load conda
-conda create fusion python==3.9
+conda create -n fusion python==3.9
 conda activate fusion
 pip install globus-compute-endpoint
 pip install globus-automate-client
@@ -18,7 +18,7 @@ Use the provided `config.yml_template` as a model to configure your endpoint. Ed
 globus-compute-endpoint config <YOUR_ENDPOINT_NAME>
 cp config.yml_template ~/.globus_compute/<YOUR_ENDPOINT_NAME>/config.yml
 globus-compute-endpoint start <YOUR_ENDPOINT_NAME>
-globous-compute-endpoint list
+globus-compute-endpoint list
 ```
 
 Copy the endpoint ID for the next step.
