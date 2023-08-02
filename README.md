@@ -15,8 +15,7 @@ pip install globus-automate-client
 Use the provided `config.yml_template` as a model to configure your endpoint. Edit it to replace your project name, environment name, etc.  Then do:
 
 ```
-globus-compute-endpoint config <YOUR_ENDPOINT_NAME>
-cp config.yml_template ~/.globus_compute/<YOUR_ENDPOINT_NAME>/config.yml
+globus-compute-endpoint configure --endpoint-config config.yml_template <YOUR_ENDPOINT_NAME>
 globus-compute-endpoint start <YOUR_ENDPOINT_NAME>
 globus-compute-endpoint list
 ```
