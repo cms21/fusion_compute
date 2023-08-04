@@ -5,14 +5,30 @@ import os
 import json
 
 load_dotenv(dotenv_path="./fusion.env")
-flow_id = os.getenv("GLOBUS_FLOW_ID")
-fusion_func = os.getenv("GLOBUS_FUNCTION_ID")
-compute_endpoint = os.getenv("GLOBUS_COMPUTE_ENDPOINT")
 
 fusion_flow_definition = {
     "Comment": "Run Fusion application",
-    "StartAt": "Fusion",
+    "StartAt": "TransferFiles",
     "States": {
+        "TransferFiles": {
+            "Comment": "Transfer files",
+            "Type": "Action",
+            "ActionUrl": "https://actions.automate.globus.org/transfer/transfer",
+            "Parameters": {
+                "source_endpoint_id.$": "$.input.source.id",
+                "destination_endpoint_id.$": "$.input.destination.id",
+                "transfer_items": [
+                    {
+                        "source_path.$": "$.input.source.path",
+                        "destination_path.$": "$.input.destination.path",
+                        "recursive.$": "$.input.recursive_tx"
+                    }
+                ]
+            },
+            "ResultPath": "$.TransferFiles",
+            "WaitTime": 300,
+            "Next": "Fusion"
+        },
         "Fusion": {
             "Comment": "Fusion",
             "Type": "Action",
@@ -31,9 +47,18 @@ fusion_flow_definition = {
 
 fusion_input = {
     "input": {
-      "compute_endpoint_id": None,
-      "compute_function_id": None,
-      "compute_function_kwargs": {}
+        "source": {
+            "path": None,
+            "id": None,
+        },
+        "destination": {
+            "path": None,
+            "id": None,
+        },
+        "recursive_tx": None,
+        "compute_endpoint_id": None,
+        "compute_function_id": None,
+        "compute_function_kwargs": {}
     }
 }
 
@@ -48,8 +73,9 @@ def fusion_wrapper(input_str="Hello Iris"):
 if __name__ == '__main__':
 
     # Get registered funcion
-    gc = globus_compute_sdk.Client()
+    fusion_func = os.getenv("GLOBUS_FUNCTION_ID")
     if fusion_func is None:
+        gc = globus_compute_sdk.Client()
         print("Registering new function")
         fusion_func = gc.register_function(fusion_wrapper)
         with open("fusion.env", "a") as f:
@@ -58,6 +84,7 @@ if __name__ == '__main__':
     print(f"function_id = '{fusion_func}'")
 
     # Get flow
+    flow_id = os.getenv("GLOBUS_FLOW_ID")
     fc = create_flows_client()
     if flow_id is None:
         print("Creating new flow")
@@ -75,8 +102,15 @@ if __name__ == '__main__':
     print(f"flow_id = '{flow_id}'")
 
     # Create input file with the correct ids
-    fusion_input["input"]["compute_endpoint_id"] = compute_endpoint
+    fusion_input["input"]["compute_endpoint_id"] = os.getenv("GLOBUS_COMPUTE_ENDPOINT")
     fusion_input["input"]["compute_function_id"] = fusion_func
+
+    fusion_input["input"]["source"]["id"] = os.getenv("GLOBUS_TRANSFER_ENDPOINT_SRC")
+    fusion_input["input"]["destination"]["id"] = os.getenv("GLOBUS_TRANSFER_ENDPOINT_DEST")
+
+    # fusion_input["input"]["source"]["id"] = source_path
+    # fusion_input["input"]["destination"]["id"] = destination_path
+    # fusion_input["input"]["recursive_tx"] = False
 
     with open("input.json", "w") as file:
         json.dump(fusion_input, file)

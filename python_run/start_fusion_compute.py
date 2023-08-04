@@ -2,9 +2,8 @@ from globus_automate_client import create_flows_client
 import globus_compute_sdk
 from dotenv import load_dotenv
 import os, json, time, uuid
-from datetime import datetime
 
-load_dotenv(dotenv_path="./fusion.env")
+load_dotenv(dotenv_path="../fusion.env")
 flow_id = os.getenv("GLOBUS_FLOW_ID")
 
 def endpoint_active(flow_input):
@@ -52,14 +51,21 @@ def test_multiflow(flow_input, monitor=False,label=None, nruns=1,tags=None):
     else:
         return False
     
-def run_flow(flow_input,label=None, tags=None, flow_client=None):
+def run_flow(flow_input,label=None, tags=None, flow_client=None,verbose=False):
 
     if endpoint_active(flow_input):
         if flow_client is None:
             flow_client = create_flows_client()
         flow = flow_client.get_flow(flow_id)
         flow_scope = flow['globus_auth_scope']
-        flow_action = flow_client.run_flow(flow_id, flow_scope, flow_input, label=label, tags=tags)        
+        flow_action = flow_client.run_flow(flow_id, flow_scope, flow_input, label=label, tags=tags)
+        if verbose:
+            print(f'''Flow ID: {flow_action['flow_id']}
+Flow title: {flow_action['flow_title']}
+Run ID: {flow_action['run_id']}
+Run label: {flow_action['label']}
+Run owner: {flow_action['run_owner']}
+              ''')        
         return flow_action
     else:
         return None
@@ -67,7 +73,11 @@ def run_flow(flow_input,label=None, tags=None, flow_client=None):
 
 if __name__ == '__main__':
 
-    nruns = 3
-    flow_input = json.load(open("./input.json"))
-    label = f"fusion-run"
-    test_multiflow(flow_input, monitor=False, label=label, nruns=nruns)
+    flow_input = json.load(open("../input.json"))
+    label = f"transfer-fusion-run"
+
+    flow_input["input"]["recursive_tx"] = False # set false to copy a file, true for a directory
+    flow_input['input']['source']['path'] = "/csimpson/polaris/fusion/dummy.txt"
+    flow_input['input']['destination']['path'] = "/datascience/csimpson/fusion/dummy_data/dummy.txt"
+
+    run_flow(flow_input, label=label, verbose=True)
