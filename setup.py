@@ -69,6 +69,21 @@ def fusion_wrapper(input_str="Hello Iris"):
     res = subprocess.run(cmd.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return res.returncode, res.stdout.decode("utf-8"), res.stderr.decode("utf-8")
 
+def fusion_stdout_file_wrapper(input_str="Hello Iris",proc_dir="/eagle/datascience/csimpson/fusion/dummy_data/"):
+    import subprocess
+    import os
+
+    cmd = f"echo {input_str}"
+    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=True, executable='/bin/bash')
+
+    with open(os.path.join(proc_dir,'output.log'), 'w+') as f:
+        f.write(res.stdout.decode('utf-8'))
+
+    with open(os.path.join(proc_dir,'errors.log'), 'w+') as f:
+        f.write(res.stderr.decode('utf-8'))
+
+    return res.returncode
+
 
 if __name__ == '__main__':
 
@@ -77,7 +92,7 @@ if __name__ == '__main__':
     if fusion_func is None:
         gc = globus_compute_sdk.Client()
         print("Registering new function")
-        fusion_func = gc.register_function(fusion_wrapper)
+        fusion_func = gc.register_function(fusion_stdout_file_wrapper)
         with open("fusion.env", "a") as f:
             f.write(f"GLOBUS_FUNCTION_ID={fusion_func}\n")
 
