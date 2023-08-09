@@ -2,6 +2,7 @@ from globus_automate_client import create_flows_client
 import globus_compute_sdk
 from dotenv import load_dotenv
 import os, json, time, uuid
+import argparse
 
 load_dotenv(dotenv_path="../fusion.env")
 flow_id = os.getenv("GLOBUS_FLOW_ID")
@@ -17,39 +18,6 @@ def endpoint_active(flow_input):
         return False
     else:
         return True
-
-def test_multiflow(flow_input, monitor=False,label=None, nruns=1,tags=None):
-
-    test_tag = uuid.uuid4()
-    if tags is None: tags = []
-    tags.append(str(test_tag))
-
-    if endpoint_active(flow_input):
-        
-        fc = create_flows_client()
-        flow_actions = []
-        for i in range(nruns):
-            flow_action = run_flow(flow_input,
-                                   label=label+f"-{i+1}/{nruns}",
-                                   flow_client=fc,
-                                   tags=tags)
-            flow_actions.append(flow_action)
-
-        if monitor:
-            for flow_action in flow_actions:
-                print(flow_action)
-                flow_action_id = flow_action['action_id']
-                flow_status = flow_action['status']
-                print(f'Flow action started with id: {flow_action_id}')
-
-                while flow_status == 'ACTIVE':
-                    time.sleep(10)
-                    flow_action = fc.flow_action_status(flow_id, None, flow_action_id)
-                    flow_status = flow_action['status']
-                    print(f'Flow status: {flow_status}')
-        return True
-    else:
-        return False
     
 def run_flow(flow_input,label=None, tags=None, flow_client=None,verbose=False):
 
@@ -60,24 +28,34 @@ def run_flow(flow_input,label=None, tags=None, flow_client=None,verbose=False):
         flow_scope = flow['globus_auth_scope']
         flow_action = flow_client.run_flow(flow_id, flow_scope, flow_input, label=label, tags=tags)
         if verbose:
-            print(f'''Flow ID: {flow_action['flow_id']}
-Flow title: {flow_action['flow_title']}
-Run ID: {flow_action['run_id']}
-Run label: {flow_action['label']}
-Run owner: {flow_action['run_owner']}
-              ''')        
+            print(f"Flow ID: {flow_action['flow_id']} \nFlow title: {flow_action['flow_title']} \nRun ID: {flow_action['run_id']} \nRun label: {flow_action['label']} \nRun owner: {flow_action['run_owner']}")        
         return flow_action
     else:
         return None
 
+def arg_parse():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--destination_path', default='/datascience/csimpson/fusion/dummy_data/dummy.txt', help=f'Destination path for transfer file(s)')
+    parser.add_argument('--source_path', default='/csimpson/polaris/fusion/dummy.txt', help=f'Path of file(s) to transfer')
+    parser.add_argument('--recursive', default=False, help=f'Do recursive file transfer')
+    parser.add_argument('--label', default='transfer-fusion-run', help=f'Flow label')
+    parser.add_argument('--input_json', help='Path to the flow input .json file',
+                        default='../input.json')
+    parser.add_argument('--verbose', default=False, action='store_true', help=f'Verbose output')
+
+    return parser.parse_args()
+
 
 if __name__ == '__main__':
 
-    flow_input = json.load(open("../input.json"))
-    label = f"transfer-fusion-run"
+    args = arg_parse()
 
-    flow_input["input"]["recursive_tx"] = False # set false to copy a file, true for a directory
-    flow_input['input']['source']['path'] = "/csimpson/polaris/fusion/dummy.txt"
-    flow_input['input']['destination']['path'] = "/datascience/csimpson/fusion/dummy_data/dummy.txt"
+    flow_input = json.load(open(args.input_json))
+    label = args.label
 
-    run_flow(flow_input, label=label, verbose=True)
+    flow_input["input"]["recursive_tx"] = args.recursive
+    flow_input['input']['source']['path'] = args.source_path
+    flow_input['input']['destination']['path'] = args.destination_path
+
+    run_flow(flow_input, label=label, verbose=args.verbose)

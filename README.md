@@ -24,7 +24,7 @@ Copy the endpoint ID for the next step.
 
 ## Setup on Iris
 ### 1. Clone this repo
-Paste the enpoint ID into `fusion.env_template` and copy it to `fusion.env`.
+Paste the enpoint ID into `fusion.env_template` and copy it to `fusion.env`.  Also copy the transfer endpoints to the source and destination endpoints.
 
 ```
 cp fusion.env_template fusion.env
@@ -62,15 +62,15 @@ Validate your credentials to use the flow we have created (you will only have to
 export $(cat fusion.env | xargs)
 globus login --flow ${GLOBUS_FLOW_ID}
 ```
-Start the flow by typing at the command line:
+Start a flow by running the bash script:
 ```
-globus flows start --input input.json ${GLOBUS_FLOW_ID}
+./bash_run/start_fusion_compute.sh
 ```
 ### 3b. Python
-Alternatively, you can start the flow using the python script:
+Alternatively, you can start a flow by using the python script:
 ```
-python start_fusion_compute.py
+python python_run/start_fusion_compute.py
 ```
-You will be prompted to validate your globus credentials the first time you run this script.
+You may be prompted to validate your globus credentials the first time you run this script.
 
 Both of these approaches will transfer a file and run the fusion application once.  To run this sequence of actions repeatedly, you can call the CLI command from a bash script in a loop or call the python call from a python script in a loop.
