@@ -39,7 +39,7 @@ fusion_flow_definition = {
                 "kwargs.$": "$.input.compute_function_kwargs"
             },
             "ResultPath": "$.FusionOutput",
-            "WaitTime": 600,
+            "WaitTime": 86400,
             "End": True
         }
     }
@@ -70,6 +70,17 @@ def fusion_wrapper(input_str="Hello Iris"):
     res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
     return res.returncode, res.stdout.decode("utf-8"), res.stderr.decode("utf-8")
 
+# Application that returns stdout to Globus service
+def fusion_wrapper_sleep(input_str="Hello Iris", sleep_time=0):
+    import subprocess
+
+    cmd = f"echo {input_str}; sleep {sleep_time}"
+    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
+    if res.returncode != 0:
+        raise Exception(f"Application failed with non-zero return code")
+  
+    return res.returncode, res.stdout.decode("utf-8"), res.stderr.decode("utf-8")
+
 # Application that returns stdout to file on compute machine file system
 def fusion_stdout_file_wrapper(input_str="Hello Iris", proc_dir="/eagle/datascience/csimpson/fusion/dummy_data/"):
     import subprocess
@@ -94,7 +105,7 @@ if __name__ == '__main__':
     if fusion_func is None:
         gc = globus_compute_sdk.Client()
         print("Registering new function")
-        fusion_func = gc.register_function(fusion_wrapper)
+        fusion_func = gc.register_function(fusion_wrapper_sleep)
         with open("fusion.env", "a") as f:
             f.write(f"GLOBUS_FUNCTION_ID={fusion_func}\n")
 

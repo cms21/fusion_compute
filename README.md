@@ -57,12 +57,19 @@ globus login
 ### 3. Run the flow
 There are two ways to start the flow.
 ### 3a. CLI
-Validate your credentials to use the flow we have created (you will only have to do this once):
+On Iris, validate your credentials to use the flow we have created (you will only have to do this once):
 ```
 export $(cat fusion.env | xargs)
 globus login --flow ${GLOBUS_FLOW_ID}
 ```
-Start a flow by running the bash script:
+First check to see that the endpoint is active.  From a shell on Polaris type:
+```
+globus-compute-endpoint list
+```
+If it is inactive, restart the endpoint.
+
+
+Returning to Iris, start a flow by running the bash script:
 ```
 ./bash_run/start_fusion_compute.sh
 ```
