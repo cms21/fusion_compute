@@ -45,7 +45,7 @@ conda install globus-compute-sdk globus-automate-client globus-cli python-dotenv
 python setup_fusion_flow.py
 ```
 
-When running this script for the first time, you may be asked to authenticate your ALCF credentials with globus two times.  Running this script should create a new file `input.json` and modify `fusion.env` by adding some new environment variables containing the IDs of the flow and functions.
+When running this script for the first time, you will be asked to authenticate your ALCF credentials with globus.  Running this script should create a new file `input.json` and modify `fusion.env` by adding some new environment variables containing the IDs of the flow and functions.
 
 Login to globus.  You will be directed to a web page to validate your globus credentials.
 ```
@@ -58,7 +58,7 @@ You can start a flow by using the python script:
 ```
 python start_fusion_flow.py --source_path <SRC_PATH> --destination_path <DEST_PATH> --return_path <RET_PATH>
 ```
-You may be prompted to validate your globus credentials the first time you run this script.  Additionally, you may recieve an email from the Globus service saying your flow "requires attention".  If you do recieve this email, follow its instructions for resuming the flow from the CLI (it will be a command that starts with `globus-automate`).  After running validating your credentials for this first run, you should not have to validate again (or not for a longish period of time).
+You will be prompted to validate your globus credentials the first time you run this script.  Additionally, you may recieve an email from the Globus service saying your flow "requires attention".  If you do recieve this email, follow its instructions for resuming the flow from the CLI (it will be a command that starts with `globus-automate`).  After validating your credentials for this first run, you should not have to validate again (or not for a longish period of time).
 
 The path `<SRC_PATH>` and `<RET_PATH>` should be paths on the source machine and `<DEST_PATH>` should be a path on the destination machine (eagle).
 
