@@ -3,14 +3,12 @@ Scripts to deploy fusion application on ALCF systems with Globus Flows
 
 ## Setup on Polaris
 First login to Polaris and do the following things:
-### 1. Create an environment and install necessary packages
+### 1. Load conda module
 ```
 module load conda
-conda create -n fusion python==3.9
-conda activate fusion
-pip install globus-compute-endpoint
-pip install globus-automate-client
+conda activate /eagle/IRIBeta/fusion_env
 ```
+
 ### 2. Create a Globus Endpoint
 Use the provided `config.yml_template` as a model to configure your endpoint. Edit it to replace your project name, environment name, etc.  Then do:
 
@@ -24,12 +22,12 @@ Copy the endpoint ID for the next step.
 
 ## Setup on Iris
 ### 1. Clone this repo
-Paste the enpoint ID into `fusion.env_template` and copy it to `fusion.env`.  Also copy the transfer endpoints to the source and destination endpoints.
+Clone this repo. Paste your Polaris compute enpoint ID into `fusion.env_template` and copy it to `fusion.env`.  Also copy the transfer endpoints to the source and destination endpoints.  The destination endpoint should be the eagle endpoint.
 
 ```
 cp fusion.env_template fusion.env
 ```
-### 1.1 Make an environment and install globus
+### 2. Make an environment and install globus
 
 Make a conda environment.
 ```
@@ -42,42 +40,32 @@ Install required packages.
 conda install globus-compute-sdk globus-automate-client globus-cli python-dotenv 
 ```
 
-### 2. Run the setup script
+### 3. Run the setup script
 ```
 python setup_fusion_flow.py
 ```
 
-When running this script for the first time, you may be asked to authenticate your ALCF credentials with globus two times.  Running this script should create a new file `input.json` and modify `fusion.env` by adding some new environment variables containing the IDs of the flow and function.
+When running this script for the first time, you may be asked to authenticate your ALCF credentials with globus two times.  Running this script should create a new file `input.json` and modify `fusion.env` by adding some new environment variables containing the IDs of the flow and functions.
 
 Login to globus.  You will be directed to a web page to validate your globus credentials.
 ```
 globus login
 ```
 
-### 3. Run the flow
-There are two ways to start the flow.
-### 3a. CLI
-On Iris, validate your credentials to use the flow we have created (you will only have to do this once):
-```
-export $(cat fusion.env | xargs)
-globus login --flow ${GLOBUS_FLOW_ID}
-```
-First check to see that the endpoint is active.  From a shell on Polaris type:
-```
-globus-compute-endpoint list
-```
-If it is inactive, restart the endpoint.
+### 4. Run the flow
 
-
-Returning to Iris, start a flow by running the bash script:
+You can start a flow by using the python script:
 ```
-./bash_run/start_fusion_compute.sh
-```
-### 3b. Python
-Alternatively, you can start a flow by using the python script:
-```
-python python_run/start_fusion_compute.py
+python start_fusion_flow.py --source_path <SRC_PATH> --destination_path <DEST_PATH>
 ```
 You may be prompted to validate your globus credentials the first time you run this script.
 
-Both of these approaches will transfer a file and run the fusion application once.  To run this sequence of actions repeatedly, you can call the CLI command from a bash script in a loop or call the python call from a python script in a loop.
+The path `<SRC_PATH>` should be a path on the source machine and `<DEST_PATH>` should be a path on the destination machine (eagle).
+
+### 5. Trigger Script
+
+There's a trigger bash script that wraps around `start_fusion_flow.py`, [iris_trigger.sh](iris_trigger.sh).  This could be used to bundle the flow with the local execution of IDL scripts.
+
+### 6. Tutorial Notebook
+
+There's a Jupyter notebook [Fusion_tutorial_example.ipynb](Fusion_tutorial_example.ipynb) that runs a simplified flow and breaks down how to deploy it with explanation.

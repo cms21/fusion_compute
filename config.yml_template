@@ -1,17 +1,19 @@
 engine:
-    type: HighThroughputEngine
-    max_workers_per_node: 1
-
-    # Un-comment to give each worker exclusive access to a single GPU
-    available_accelerators: 4
-
-    strategy:
-        type: SimpleStrategy
-        max_idletime: 300
+    # This engine uses the HighThroughputExecutor
+    type: GlobusComputeEngine
+    
+    available_accelerators: 4 # Assign one worker per GPU
+    cpu_affinity: block-reverse  # Assigns cpus in reverse sequential order                                                   
+    prefetch_capacity: 0  # Increase if you have many more tasks than workers                                                    
+    cores_per_worker: 8
 
     address:
         type: address_by_interface
         ifname: bond0
+
+    strategy:
+        type: SimpleStrategy
+        max_idletime: 300
 
     provider:
         type: PBSProProvider
@@ -20,21 +22,21 @@ engine:
             type: MpiExecLauncher
             # Ensures 1 manger per node, work on all 64 cores
             bind_cmd: --cpu-bind
-            overrides: --depth=64 --ppn 1
+            overrides: --depth=32 --ppn 1
 
-        account: <YOUR_GROUP_NAME>
-        queue: preemptable
+        account: IRIBeta
+        queue: debug
         cpus_per_node: 32
         select_options: ngpus=4
 
         # e.g., "#PBS -l filesystems=home:grand:eagle\n#PBS -k doe"
-        scheduler_options: "#PBS -l filesystems=home:grand:eagle"
+        scheduler_options: "#PBS -l filesystems=home:eagle"
 
         # Node setup: activate necessary conda environment and such
-        worker_init: "module load conda; conda activate fusion; cd <YOUR_RUN_DIRECTORY>"
+        worker_init: "module load conda; conda activate /eagle/IRIBeta/fusion_env; cd <YOUR_RUN_DIRECTORY>"
 
-        walltime: 01:00:00
+        walltime: 00:60:00
         nodes_per_block: 1
         init_blocks: 0
         min_blocks: 0
-        max_blocks: 2
+        max_blocks: 1
