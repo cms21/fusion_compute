@@ -56,11 +56,11 @@ globus login
 
 You can start a flow by using the python script:
 ```
-python start_fusion_flow.py --source_path <SRC_PATH> --destination_path <DEST_PATH>
+python start_fusion_flow.py --source_path <SRC_PATH> --destination_path <DEST_PATH> --return_path <RET_PATH>
 ```
-You may be prompted to validate your globus credentials the first time you run this script.
+You may be prompted to validate your globus credentials the first time you run this script.  Additionally, you may recieve an email from the Globus service saying your flow "requires attention".  If you do recieve this email, follow its instructions for resuming the flow from the CLI (it will be a command that starts with `globus-automate`).  After running validating your credentials for this first run, you should not have to validate again (or not for a longish period of time).
 
-The path `<SRC_PATH>` should be a path on the source machine and `<DEST_PATH>` should be a path on the destination machine (eagle).
+The path `<SRC_PATH>` and `<RET_PATH>` should be paths on the source machine and `<DEST_PATH>` should be a path on the destination machine (eagle).
 
 ### 5. Trigger Script
 
@@ -68,4 +68,4 @@ There's a trigger bash script that wraps around `start_fusion_flow.py`, [iris_tr
 
 ### 6. Tutorial Notebook
 
-There's a Jupyter notebook [Fusion_tutorial_example.ipynb](Fusion_tutorial_example.ipynb) that runs a simplified flow and breaks down how to deploy it with explanation.
+There's a Jupyter notebook [Fusion_tutorial_example.ipynb](Fusion_tutorial_example.ipynb) that runs a simplified flow and breaks down how to deploy it with explanations.
