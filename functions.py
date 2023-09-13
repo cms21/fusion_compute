@@ -16,7 +16,7 @@ def fusion_wrapper(run_directory, config_path="ionorb_stl2d_boris.config", outfi
     runtime = end - start
 
     if res.returncode != 0:
-        raise Exception(f"Application failed with non-zero return code: {res.returncode} stdout='{res.stdout.decode('utf-8')}' stderr='{res.stderr.decode('utf-8')}' runtime={runtime} completion_time={completion_time}")
+        raise Exception(f"Application failed with non-zero return code: {res.returncode} stdout='{res.stdout.decode('utf-8')}' stderr='{res.stderr.decode('utf-8')}' runtime={runtime}")
     else:
         try:
             shutil.copyfile(outfile,os.path.join(run_directory,"outputs",outfile))
@@ -74,13 +74,13 @@ if __name__ == '__main__':
 
     if args.test:
         print("Testing functions")
-        functions = [adder, fusion_wrapper, make_plots]
+        functions = [fusion_wrapper, make_plots]
         for function in functions:
             print(function)
             gce = globus_compute_sdk.Executor(endpoint_id=os.getenv("GLOBUS_COMPUTE_ENDPOINT"))
-            params = []
-            if function != adder:
-                params= ["/eagle/datascience/csimpson/fusion/dummy_data/"]
+            
+            
+            params= ["/eagle/datascience/csimpson/fusion/dummy_data/"]
             future = gce.submit(function,*params)
             try:
                 print(future.result())
