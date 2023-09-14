@@ -25,6 +25,30 @@ def fusion_wrapper(run_directory, config_path="ionorb_stl2d_boris.config", outfi
             shutil.copyfile(outfile,os.path.join(run_directory,"outputs",outfile))
         return res.returncode, res.stdout.decode("utf-8"), res.stderr.decode("utf-8"), runtime
 
+def heatmapping(run_directory, config_path="ionorb_stl2d_boris.config"):
+    import sys
+    import os
+    import glob
+    import shutil
+
+    sys.path.append("/eagle/IRIBeta/bin")
+    from fusion_plots import plot_2Dhist
+
+    os.chdir(run_directory)
+    try:
+        peak,Phi,z = plot_2Dhist(config_filename=config_path)
+    except Exception as e:
+        return f"Failure {e}"
+
+    plots = glob.glob("*.png")
+    for plot in plots:
+        try:
+            shutil.copy(plot,os.path.join(run_directory,"outputs",plot))
+        except:
+            os.makedirs(os.path.join(run_directory,"outputs"))
+            shutil.copyfile(plot,os.path.join(run_directory,"outputs",plot))
+    return "Success",peak,Phi,z,plots
+
 def make_plots(run_directory, hits_file="out.hits.els.txt"):
     import sys
     import os
@@ -38,7 +62,7 @@ def make_plots(run_directory, hits_file="out.hits.els.txt"):
     try:
         make_all_plots(hits_file)
     except Exception as e:
-        return "Failure"
+        return f"Failure {e}"
 
     plots = glob.glob("*.png")
     for plot in plots:
@@ -55,6 +79,8 @@ def register_function(function):
         envvarname = "FUSION_FUNCTION_ID"
     elif function == make_plots:
         envvarname = "PLOT_FUNCTION_ID"
+    elif function == heatmapping:
+        envvarname = "HEATMAP_FUNCTION_ID"
     else:
         return "Unknown function"
     gc = globus_compute_sdk.Client()
@@ -74,11 +100,10 @@ if __name__ == '__main__':
 
     if args.test:
         print("Testing functions")
-        functions = [fusion_wrapper, make_plots]
+        functions = [fusion_wrapper, make_plots, heatmapping]
         for function in functions:
             print(function)
-            gce = globus_compute_sdk.Executor(endpoint_id=os.getenv("GLOBUS_COMPUTE_ENDPOINT"))
-            
+            gce = globus_compute_sdk.Executor(endpoint_id=os.getenv("GLOBUS_COMPUTE_POLARIS_ENDPOINT"))
             
             params= ["/eagle/datascience/csimpson/fusion/dummy_data/"]
             future = gce.submit(function,*params)
@@ -88,6 +113,6 @@ if __name__ == '__main__':
                 print(e)
     else:
         print("Registering functions")
-        functions = [fusion_wrapper,make_plots]
+        functions = [fusion_wrapper,make_plots,heatmapping]
         for function in functions:
             register_function(function)
