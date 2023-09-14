@@ -40,12 +40,10 @@ if __name__ == '__main__':
     print(f"flow_id = '{flow_id}'")
 
     # Create input file with the correct ids for endpoints and functions
-    fusion_input["input"]["compute_endpoint_id"] = os.getenv("GLOBUS_COMPUTE_ENDPOINT")
     fusion_input["input"]["compute_function_id"] = os.getenv("FUSION_FUNCTION_ID")
     fusion_input["input"]["plot_function_id"] = os.getenv("PLOT_FUNCTION_ID")
 
     fusion_input["input"]["source"]["id"] = os.getenv("GLOBUS_TRANSFER_ENDPOINT_SRC")
-    fusion_input["input"]["destination"]["id"] = os.getenv("GLOBUS_TRANSFER_ENDPOINT_DEST")
 
     # Write flow inputs file
     with open("input.json", "w") as file:

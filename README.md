@@ -1,16 +1,18 @@
 # fusion_compute
 Scripts to deploy fusion application on ALCF systems with Globus Flows
 
-## Setup on Polaris
-First login to Polaris and do the following things:
+## Setup on Polaris/Perlmutter
+First login to Polaris and/or Perlmutter and do the following things:
 ### 1. Load conda module
+
+On Polaris:
 ```
 module load conda
 conda activate /eagle/IRIBeta/fusion_env
 ```
 
 ### 2. Create a Globus Endpoint
-Use the provided `config.yml_template` as a model to configure your endpoint. Edit it to replace your project name, environment name, etc.  Then do:
+Use the provided `<MACHINE>_config.yml_template` as a model to configure your endpoint in the [endpoint_configs](endpoint_configs) directory. Edit it to replace your project name, environment name, etc.  Then do:
 
 ```
 globus-compute-endpoint configure --endpoint-config config.yml_template <YOUR_ENDPOINT_NAME>
@@ -22,7 +24,7 @@ Copy the endpoint ID for the next step.
 
 ## Setup on Iris
 ### 1. Clone this repo
-Clone this repo. Paste your Polaris compute enpoint ID into `fusion.env_template` and copy it to `fusion.env`.  Also copy the transfer endpoints to the source and destination endpoints.  The destination endpoint should be the eagle endpoint.
+Clone this repo. Paste your compute enpoint IDs for Polaris and/or Perlmutter into `fusion.env_template` and copy it to `fusion.env`.  Also paste in the source endpoint id into the file.
 
 ```
 cp fusion.env_template fusion.env

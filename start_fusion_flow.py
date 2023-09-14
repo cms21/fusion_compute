@@ -19,9 +19,9 @@ def endpoint_active(compute_endpoint_id):
     else:
         return True
     
-def run_flow(input_json, source_path, destination_path, return_path, label=None, tags=None, flow_client=None,verbose=False):
+def run_flow(input_json, source_path, destination_path, return_path, machine="polaris", label=None, tags=None, flow_client=None,verbose=False):
     
-    flow_input = set_flow_input(input_json,source_path,destination_path,return_path,verbose=verbose)
+    flow_input = set_flow_input(machine, input_json,source_path,destination_path,return_path,verbose=verbose)
     if endpoint_active(flow_input["input"]["compute_endpoint_id"]):
         if flow_client is None:
             flow_client = create_flows_client()
@@ -35,16 +35,30 @@ def run_flow(input_json, source_path, destination_path, return_path, label=None,
         return None
 
 
-def set_flow_input(input_json,source_path,destination_path,return_path,verbose=False):
+def set_flow_input(machine, input_json,source_path,destination_path,return_path,verbose=False):
 
     flow_input = json.load(open(input_json))
+
+    # Set machine specific inputs
+    if machine == "polaris":
+        flow_input["input"]["destination"]["id"] = os.getenv("GLOBUS_ALCF_EAGLE")
+        flow_input["input"]["compute_endpoint_id"] = os.getenv("GLOBUS_COMPUTE_POLARIS_ENDPOINT")
+        run_directory = os.path.join("/eagle","/".join(destination_path.split("/")[1:]))
+    elif machine == "perlmutter":
+        flow_input["input"]["destination"]["id"] = os.getenv("GLOBUS_NERSC_PERLMUTTER")
+        flow_input["input"]["compute_endpoint_id"] = os.getenv("GLOBUS_COMPUTE_PERLMUTTER_ENDPOINT")
+        run_directory = destination_path #check this
+    else:
+        raise Exception(f"Unknown machine {machine}")
+
+    # Set other inputs
     flow_input["input"]["source"]["outpath"] = return_path
     flow_input["input"]["source"]["path"] = source_path
     flow_input["input"]["destination"]["outpath"] = os.path.join(destination_path,"outputs/")
     flow_input["input"]["destination"]["path"] = destination_path
     flow_input["input"]["recursive_tx"] = True
-    flow_input["input"]["compute_function_kwargs"] = {"run_directory": os.path.join("/eagle","/".join(destination_path.split("/")[1:]))}
-    flow_input["input"]["plot_function_kwargs"] = {"run_directory": os.path.join("/eagle","/".join(destination_path.split("/")[1:]))}
+    flow_input["input"]["compute_function_kwargs"] = {"run_directory": run_directory}
+    flow_input["input"]["plot_function_kwargs"] = {"run_directory": run_directory}
     
     if verbose:
         print(f"Compute function inputs={flow_input['input']['compute_function_kwargs']}")
@@ -59,6 +73,7 @@ def arg_parse():
     parser.add_argument('--source_path', default='/csimpson/polaris/fusion/', help=f'Path of file(s) to transfer')
     parser.add_argument('--return_path', default='/csimpson/polaris/fusion_return/', help=f'Path where files are returned on source machine')
     parser.add_argument('--label', default='transfer-fusion-run', help=f'Flow label')
+    parser.add_argument('--machine', default='polaris', help=f'Target machine for flow')
     parser.add_argument('--input_json', help='Path to the flow input .json file',
                         default="./input.json")
     parser.add_argument('--verbose', default=False, action='store_true', help=f'Verbose output')
@@ -70,8 +85,9 @@ if __name__ == '__main__':
     args = arg_parse()
     if args.verbose:
         print(f"Running flow {flow_id}")
+        print(f"Running on {args.machine}")
         print(f"Path on source endpoint is {args.source_path}")
         print(f"Path on destination endpoint is {args.destination_path}")
         print(f"Path on local machine to input.json is {args.destination_path}")
         print(f"Flow label {args.source_path}")
-    run_flow(args.input_json, args.source_path, args.destination_path, args.return_path, label=args.label, verbose=args.verbose)
+    run_flow(args.input_json, args.source_path, args.destination_path, args.return_path, machine=args.machine, label=args.label, verbose=args.verbose)
