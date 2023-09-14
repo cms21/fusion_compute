@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import math
 
 def plot_2Dhist(config_filename='ionorb_stl2d_boris.config'):
@@ -24,7 +25,7 @@ def plot_2Dhist(config_filename='ionorb_stl2d_boris.config'):
          if words[0] == 'out_fname':
             out_fname = words[1].strip('\"')
          if words[0] == 'dPhi':
-            dPhi = numpy.fromstring( words[1], dtype=float, sep=" " )
+            dPhi = np.fromstring( words[1], dtype=float, sep=" " )
             dPhi = 0.0
          if words[0] == 'colormap':
             colormap = words[1]
