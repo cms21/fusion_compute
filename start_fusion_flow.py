@@ -69,7 +69,7 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
 def arg_parse():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--destination_path', default='/IRIBeta/test_runs/', help=f'Destination path for transfer file(s)')
+    parser.add_argument('--destination_path', default='/IRIBeta/fusion/test_runs/', help=f'Destination path for transfer file(s)')
     parser.add_argument('--source_path', default='/csimpson/polaris/fusion/', help=f'Path of file(s) to transfer')
     parser.add_argument('--return_path', default='/csimpson/polaris/fusion_return/', help=f'Path where files are returned on source machine')
     parser.add_argument('--label', default='transfer-fusion-run', help=f'Flow label')

@@ -10,7 +10,7 @@ def fusion_wrapper(run_directory, config_path="ionorb_stl2d_boris.config", outfi
 
     start = time.time()
     os.chdir(run_directory)
-    command = f"/eagle/IRIBeta/bin/ionorb_stl_boris2d {config_path}"
+    command = f"/eagle/IRIBeta/fusion/bin/ionorb_stl_boris2d {config_path}"
     res = subprocess.run(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     end = time.time()
     runtime = end - start
@@ -31,7 +31,7 @@ def heatmapping(run_directory, config_path="ionorb_stl2d_boris.config"):
     import glob
     import shutil
 
-    sys.path.append("/eagle/IRIBeta/bin")
+    sys.path.append("/eagle/IRIBeta/fusion/bin")
     from fusion_plots import plot_2Dhist
 
     os.chdir(run_directory)
@@ -55,7 +55,7 @@ def make_plots(run_directory, hits_file="out.hits.els.txt"):
     import glob
     import shutil
 
-    sys.path.append("/eagle/IRIBeta/bin")
+    sys.path.append("/eagle/IRIBeta/fusion/bin")
     from fusion_plots import make_all_plots
 
     os.chdir(run_directory)
