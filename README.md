@@ -8,7 +8,7 @@ First login to Polaris and/or Perlmutter and do the following things:
 On Polaris:
 ```
 module load conda
-conda activate /eagle/IRIBeta/fusion_env
+conda activate /eagle/IRIBeta/fusion/fusion_env
 ```
 
 ### 2. Create a Globus Endpoint
