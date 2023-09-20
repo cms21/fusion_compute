@@ -1,0 +1,25 @@
+engine:
+  address:
+    ifname: nmnb0
+    type: address_by_interface
+  available_accelerators: 4
+  cpu_affinity: block
+  prefetch_capacity: 0
+  provider:
+    account: m3739
+    init_blocks: 0
+    launcher:
+      overrides: overrides="--gpus-per-node 4 -c 64"
+      type: SrunLauncher
+    max_blocks: 1
+    min_blocks: 0
+    nodes_per_block: 1
+    partition: debug
+    scheduler_options: '#SBATCH -C gpu'
+    type: SlurmProvider
+    walltime: 00:10:00
+    worker_init: module load python; conda activate fusion; cd $HOME/.globus_compute/perlmutter
+  strategy:
+    max_idletime: 300
+    type: SimpleStrategy
+  type: GlobusComputeEngine
