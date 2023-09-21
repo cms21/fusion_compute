@@ -11,11 +11,11 @@ load_dotenv(dotenv_path="./fusion.env")
 if __name__ == '__main__':
 
     # Get registered funcion
-    fusion_func = os.getenv("FUSION_FUNCTION_ID")
+    fusion_func = os.getenv("IONORB_FUNCTION_ID")
     if fusion_func is None:
         ret = subprocess.run(["python","functions.py"])
         load_dotenv(dotenv_path="./fusion.env")
-        fusion_func = os.getenv("FUSION_FUNCTION_ID")
+        fusion_func = os.getenv("IONORB_FUNCTION_ID")
     print(f"function_id = '{fusion_func}'")
 
     # Get flow
@@ -40,8 +40,8 @@ if __name__ == '__main__':
     print(f"flow_id = '{flow_id}'")
 
     # Create input file with the correct ids for endpoints and functions
-    fusion_input["input"]["compute_function_id"] = os.getenv("FUSION_FUNCTION_ID")
-    fusion_input["input"]["plot_function_id"] = os.getenv("PLOT_FUNCTION_ID")
+    fusion_input["input"]["compute_function_id"] = os.getenv("IONORB_FUNCTION_ID")
+    fusion_input["input"]["plot_function_id"] = os.getenv("HEATMAP_FUNCTION_ID")
 
     fusion_input["input"]["source"]["id"] = os.getenv("GLOBUS_TRANSFER_ENDPOINT_SRC")
 
