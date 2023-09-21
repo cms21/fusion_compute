@@ -1,6 +1,6 @@
 from globus_automate_client import create_flows_client
 from dotenv import load_dotenv
-from flows import fusion_flow_definition
+from flows import heatmap_flow_definition as fusion_flow_definition
 from flows import fusion_input
 import os
 import json

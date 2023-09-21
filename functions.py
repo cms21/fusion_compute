@@ -90,6 +90,17 @@ def register_function(function):
         f.write(f"{envvarname}={fusion_func}\n")
     return f"{envvarname}={fusion_func}"
 
+# def untar(tarfile):
+#     import subprocess
+
+#     command = f"tar xvf {tarfile}"
+#     res = subprocess.run(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+#     if res.returncode != 0:
+#         raise Exception(f"Untar failed: {res.returncode} stdout='{res.stdout.decode('utf-8')}' stderr='{res.stderr.decode('utf-8')}'")
+#     else:
+#         return res.returncode, res.stdout.decode("utf-8"), res.stderr.decode("utf-8")
+
+
 def arg_parse():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test', default=False, action='store_true', help=f'Test Function')
