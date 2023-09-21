@@ -40,6 +40,12 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
     flow_input = json.load(open(input_json))
 
     # Set machine specific inputs
+    # The things that need to be set for a machine:
+    # - the transfer endpoint ("destination" id)
+    # - the compute endpoint
+    # - app_path: the path to ionorb
+    # - python_path: the directory where functions for plotting routines is kept
+    # - run_directory: the directory where the application will run (destination_path, except for polaris)
     run_directory = None
     app_path = None
     python_path = None
@@ -54,7 +60,7 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
         flow_input["input"]["destination"]["id"] = os.getenv("GLOBUS_NERSC_PERLMUTTER")
         flow_input["input"]["compute_endpoint_id"] = os.getenv("GLOBUS_COMPUTE_PERLMUTTER_ENDPOINT")
         run_directory = destination_path #check this
-        app_path = "/global/homes/c/csimpson/ionorbgpu/v2/boris2d_stl/bin/ionorb_stl_boris2d"
+        app_path = "/global/common/software/m3739/perlmutter/ionorb/bin/ionorb_stl_boris2d"
         python_path = "/global/homes/c/csimpson/fusion_compute/analysis"
     elif machine == "summit":
         raise Exception("Summit not yet implemented")
