@@ -1,8 +1,8 @@
 fusion_flow_definition = {
     "Comment": "Run Fusion application",
-    "StartAt": "Transfer_to_Eagle",
+    "StartAt": "Transfer_In",
     "States": {
-        "Transfer_to_Eagle": {
+        "Transfer_In": {
             "Comment": "Transfer files",
             "Type": "Action",
             "ActionUrl": "https://actions.automate.globus.org/transfer/transfer",
@@ -22,10 +22,10 @@ fusion_flow_definition = {
             },
             "ResultPath": "$.TransferInOutput",
             "WaitTime": 300,
-            "Next": "Fusion"
+            "Next": "IonOrb"
         },
-        "Fusion": {
-            "Comment": "Fusion",
+        "IonOrb": {
+            "Comment": "IonOrb",
             "Type": "Action",
             "ActionUrl": "https://compute.actions.globus.org",
             "Parameters": {
@@ -33,7 +33,7 @@ fusion_flow_definition = {
                 "function.$": "$.input.compute_function_id",
                 "kwargs.$": "$.input.compute_function_kwargs"
             },
-            "ResultPath": "$.FusionOutput",
+            "ResultPath": "$.IonOrbOutput",
             "WaitTime": 86400,
             "Next": "MakePlots"
         },
@@ -48,9 +48,9 @@ fusion_flow_definition = {
             },
             "ResultPath": "$.PlotsOutput",
             "WaitTime": 86400,
-            "Next": "Transfer_from_Eagle"
+            "Next": "Transfer_Out"
         },
-        "Transfer_from_Eagle": {
+        "Transfer_Out": {
             "Comment": "Transfer outfile",
             "Type": "Action",
             "ActionUrl": "https://actions.automate.globus.org/transfer/transfer",
