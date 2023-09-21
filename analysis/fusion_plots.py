@@ -120,8 +120,10 @@ def plot_2Dhist(config_filename='ionorb_stl2d_boris.config'):
    flux = plt.hist2d(P, z, bins=[pbins,rbins], range=[[pmin,pmax],[zmin,zmax]], weights=w, norm=mpl.colors.LogNorm(), cmap=colormap)
    max_flux= np.amax(flux[0])
    index = np.where(flux[0] == max_flux)
-   max_P_loc = flux[1][index[0][0]]
-   max_z_loc = flux[2][index[1][0]]
+   
+   max_flux= round(float(max_flux),2)
+   max_P_loc = round(float(flux[1][index[0][0]]),2)
+   max_z_loc = round(float(flux[2][index[1][0]]),2)
 
    print(f"Max energy wall flux is {max_flux} at Phi={max_P_loc} z={max_z_loc}")
    plt.xlabel('RH degrees -- same as 3D wall output, NOT DIII-D coords')
@@ -311,8 +313,3 @@ def make_all_plots(fname):
    except Exception as e:
       raise Exception(e)
       
-
-try:
-   make_all_plots("../test_compute/out.his.els.txt")
-except Exception as e:
-   print(e)
