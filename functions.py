@@ -5,12 +5,12 @@ import argparse
 
 load_dotenv(dotenv_path="./fusion.env")
 
-def fusion_wrapper(run_directory, config_path="ionorb_stl2d_boris.config", outfile="out.hits.els.txt"):
+def ionorb_wrapper(app_path, run_directory, config_path="ionorb_stl2d_boris.config", outfile="out.hits.els.txt"):
     import subprocess, os, time, shutil
 
     start = time.time()
     os.chdir(run_directory)
-    command = f"/eagle/IRIBeta/fusion/bin/ionorb_stl_boris2d {config_path}"
+    command = f"{app_path} {config_path}"
     res = subprocess.run(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     end = time.time()
     runtime = end - start
@@ -25,13 +25,14 @@ def fusion_wrapper(run_directory, config_path="ionorb_stl2d_boris.config", outfi
             shutil.copyfile(outfile,os.path.join(run_directory,"outputs",outfile))
         return res.returncode, res.stdout.decode("utf-8"), res.stderr.decode("utf-8"), runtime
 
-def heatmapping(run_directory, config_path="ionorb_stl2d_boris.config"):
+def heatmapping(python_path, run_directory, config_path="./ionorb_stl2d_boris.config"):
+
     import sys
     import os
     import glob
     import shutil
 
-    sys.path.append("/eagle/IRIBeta/fusion/bin")
+    sys.path.append(python_path)
     from fusion_plots import plot_2Dhist
 
     os.chdir(run_directory)
@@ -49,13 +50,13 @@ def heatmapping(run_directory, config_path="ionorb_stl2d_boris.config"):
             shutil.copyfile(plot,os.path.join(run_directory,"outputs",plot))
     return "Success",peak,Phi,z,plots
 
-def make_plots(run_directory, hits_file="out.hits.els.txt"):
+def make_plots(python_path, run_directory, hits_file="out.hits.els.txt"):
     import sys
     import os
     import glob
     import shutil
 
-    sys.path.append("/eagle/IRIBeta/fusion/bin")
+    sys.path.append(python_path)
     from fusion_plots import make_all_plots
 
     os.chdir(run_directory)
@@ -75,8 +76,8 @@ def make_plots(run_directory, hits_file="out.hits.els.txt"):
 
 def register_function(function):
     
-    if function == fusion_wrapper:
-        envvarname = "FUSION_FUNCTION_ID"
+    if function == ionorb_wrapper:
+        envvarname = "IONORB_FUNCTION_ID"
     elif function == make_plots:
         envvarname = "PLOT_FUNCTION_ID"
     elif function == heatmapping:
@@ -89,6 +90,17 @@ def register_function(function):
         f.write(f"{envvarname}={fusion_func}\n")
     return f"{envvarname}={fusion_func}"
 
+# def untar(tarfile):
+#     import subprocess
+
+#     command = f"tar xvf {tarfile}"
+#     res = subprocess.run(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+#     if res.returncode != 0:
+#         raise Exception(f"Untar failed: {res.returncode} stdout='{res.stdout.decode('utf-8')}' stderr='{res.stderr.decode('utf-8')}'")
+#     else:
+#         return res.returncode, res.stdout.decode("utf-8"), res.stderr.decode("utf-8")
+
+
 def arg_parse():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test', default=False, action='store_true', help=f'Test Function')
@@ -100,12 +112,29 @@ if __name__ == '__main__':
 
     if args.test:
         print("Testing functions")
-        functions = [fusion_wrapper, make_plots, heatmapping]
+        functions = [ionorb_wrapper, make_plots, heatmapping]
         for function in functions:
             print(function)
+
+            # gce = globus_compute_sdk.Executor(endpoint_id=os.getenv("GLOBUS_COMPUTE_PERLMUTTER_ENDPOINT"))
+            
+            # if function == ionorb_wrapper:
+            #     params= ["/global/homes/c/csimpson/ionorbgpu/v2/boris2d_stl/bin/ionorb_stl_boris2d", 
+            #             "/global/homes/c/csimpson/ionorb_test"]
+            # else:
+            #     params= ["/global/homes/c/csimpson/fusion_compute/analysis",
+            #              "/global/homes/c/csimpson/ionorb_test",]
+                
             gce = globus_compute_sdk.Executor(endpoint_id=os.getenv("GLOBUS_COMPUTE_POLARIS_ENDPOINT"))
             
-            params= ["/eagle/datascience/csimpson/fusion/dummy_data/"]
+            if function == ionorb_wrapper:
+                params= ["/eagle/IRIBeta/fusion/bin/ionorb_stl_boris2d", 
+                        "/eagle/datascience/csimpson/fusion/dummy_data"]
+            else:
+                params= ["/eagle/IRIBeta/fusion/bin",
+                         "/eagle/datascience/csimpson/fusion/dummy_data",]
+
+
             future = gce.submit(function,*params)
             try:
                 print(future.result())
@@ -113,6 +142,6 @@ if __name__ == '__main__':
                 print(e)
     else:
         print("Registering functions")
-        functions = [fusion_wrapper,make_plots,heatmapping]
+        functions = [ionorb_wrapper,make_plots,heatmapping]
         for function in functions:
             register_function(function)

@@ -17,4 +17,4 @@ RET_PATH=/csimpson/polaris/fusion_return/$TIME_NOW
 MACHINE="polaris"
 echo Running on $MACHINE
 echo Return path is $RET_PATH
-python start_fusion_flow.py --machine $MACHINE --source_path $SRC_PATH --destination_path $DEST_PATH --return_path $RET_PATH --label "iris_trigger_flow"
+python start_fusion_flow.py --machine $MACHINE --dynamic --source_path $SRC_PATH --destination_path $DEST_PATH --return_path $RET_PATH --label "iris_trigger_flow"

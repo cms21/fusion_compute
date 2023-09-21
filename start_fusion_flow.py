@@ -7,6 +7,13 @@ import argparse
 load_dotenv(dotenv_path="./fusion.env")
 flow_id = os.getenv("GLOBUS_FLOW_ID")
 
+machine_settings = {"polaris":{"transfer_endpoint": os.getenv("GLOBUS_ALCF_EAGLE"),
+                                   "compute_endpoint": os.getenv("GLOBUS_COMPUTE_POLARIS_ENDPOINT"),
+                                   "bin_path": "/eagle/IRIBeta/fusion/bin",},
+                        "perlmutter":{"transfer_endpoint": os.getenv("GLOBUS_NERSC_PERLMUTTER"),
+                                    "compute_endpoint": os.getenv("GLOBUS_COMPUTE_PERLMUTTER_ENDPOINT"),
+                                    "bin_path": "/global/common/software/m3739/perlmutter/ionorb/bin/",}}
+
 def endpoint_active(compute_endpoint_id):
 
     gc = globus_compute_sdk.Client()
@@ -19,10 +26,21 @@ def endpoint_active(compute_endpoint_id):
     else:
         return True
     
-def run_flow(input_json, source_path, destination_path, return_path, machine="polaris", label=None, tags=None, flow_client=None,verbose=False):
+def run_flow(input_json, source_path, destination_path, return_path, machine="polaris", dynamic=True, label=None, tags=None, flow_client=None,verbose=False):
+    
+    endpoint_status = endpoint_active(machine_settings[machine]["compute_endpoint"])
+    if dynamic and endpoint_status == False:
+        for alternate_machine in machine_settings.keys():
+            if alternate_machine == machine:
+                continue
+            endpoint_status = endpoint_active(machine_settings[alternate_machine]["compute_endpoint"])
+            if endpoint_status:
+                print(f"Switching to machine {alternate_machine} instead")
+                machine = alternate_machine
+                break
     
     flow_input = set_flow_input(machine, input_json,source_path,destination_path,return_path,verbose=verbose)
-    if endpoint_active(flow_input["input"]["compute_endpoint_id"]):
+    if endpoint_status:
         if flow_client is None:
             flow_client = create_flows_client()
         flow = flow_client.get_flow(flow_id)
@@ -34,37 +52,26 @@ def run_flow(input_json, source_path, destination_path, return_path, machine="po
     else:
         return None
 
-
 def set_flow_input(machine, input_json,source_path,destination_path,return_path,verbose=False):
 
     flow_input = json.load(open(input_json))
 
-    # Set machine specific inputs
-    run_directory = None
+    settings = machine_settings[machine]
+    run_directory = destination_path
     if machine == "polaris":
-        flow_input["input"]["destination"]["id"] = os.getenv("GLOBUS_ALCF_EAGLE")
-        flow_input["input"]["compute_endpoint_id"] = os.getenv("GLOBUS_COMPUTE_POLARIS_ENDPOINT")
-        if destination_path is not None:
-            run_directory = os.path.join("/eagle","/".join(destination_path.split("/")[1:]))
-    elif machine == "perlmutter":
-        flow_input["input"]["destination"]["id"] = os.getenv("GLOBUS_NERSC_PERLMUTTER")
-        flow_input["input"]["compute_endpoint_id"] = os.getenv("GLOBUS_COMPUTE_PERLMUTTER_ENDPOINT")
-        run_directory = destination_path #check this
-    else:
-        raise Exception(f"Unknown machine {machine}")
+        run_directory = os.path.join("/eagle","/".join(str(destination_path).split("/")[1:]))
 
-    outputs_dir = None
-    if destination_path is not None:
-        outputs_dir = os.path.join(destination_path,"outputs/")
-
-    # Set other inputs
+    flow_input["input"]["destination"]["id"] = settings["transfer_endpoint"]
+    flow_input["input"]["compute_endpoint_id"] = settings["compute_endpoint"]
+    flow_input["input"]["compute_function_kwargs"] = {"run_directory": run_directory, 
+                                                      "app_path": os.path.join(settings["bin_path"],"ionorb_stl_boris2d")}
+    flow_input["input"]["plot_function_kwargs"] = {"run_directory": run_directory, 
+                                                   "python_path": settings["bin_path"]}
     flow_input["input"]["source"]["outpath"] = return_path
     flow_input["input"]["source"]["path"] = source_path
-    flow_input["input"]["destination"]["outpath"] = outputs_dir
+    flow_input["input"]["destination"]["outpath"] = os.path.join(str(destination_path),"outputs/")
     flow_input["input"]["destination"]["path"] = destination_path
     flow_input["input"]["recursive_tx"] = True
-    flow_input["input"]["compute_function_kwargs"] = {"run_directory": run_directory}
-    flow_input["input"]["plot_function_kwargs"] = {"run_directory": run_directory}
     
     if verbose:
         print(f"Compute function inputs={flow_input['input']['compute_function_kwargs']}")
@@ -75,14 +82,15 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
 def arg_parse():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--destination_path', default='/IRIBeta/fusion/test_runs/', help=f'Destination path for transfer file(s)')
+    parser.add_argument('--destination_path', default='/IRIBeta/fusion/test_runs/test/', help=f'Destination path for transfer file(s)')
     parser.add_argument('--source_path', default='/csimpson/polaris/fusion/', help=f'Path of file(s) to transfer')
     parser.add_argument('--return_path', default='/csimpson/polaris/fusion_return/', help=f'Path where files are returned on source machine')
     parser.add_argument('--label', default='transfer-fusion-run', help=f'Flow label')
-    parser.add_argument('--machine', default='polaris', help=f'Target machine for flow')
+    parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings.keys())
     parser.add_argument('--input_json', help='Path to the flow input .json file',
                         default="./input.json")
     parser.add_argument('--verbose', default=False, action='store_true', help=f'Verbose output')
+    parser.add_argument('--dynamic', default=False, action='store_true', help=f'Dynamically choose available machine')
 
     return parser.parse_args()
 
@@ -96,4 +104,11 @@ if __name__ == '__main__':
         print(f"Path on destination endpoint is {args.destination_path}")
         print(f"Path on local machine to input.json is {args.destination_path}")
         print(f"Flow label {args.source_path}")
-    run_flow(args.input_json, args.source_path, args.destination_path, args.return_path, machine=args.machine, label=args.label, verbose=args.verbose)
+    run_flow(args.input_json, 
+             args.source_path, 
+             args.destination_path, 
+             args.return_path, 
+             machine=args.machine, 
+             label=args.label,
+             dynamic=args.dynamic,
+            verbose=args.verbose)
