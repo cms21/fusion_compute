@@ -26,7 +26,7 @@ if __name__ == '__main__':
         for i in range(nruns):
             label = label_base+f"-{i+1}/{nruns}"
             source_path = "/csimpson/polaris/fusion"
-            destination_path = f"/IRIBeta/test_runs/batch_test/{test_tag}/{i}"
+            destination_path = f"/IRIBeta/fusion/test_runs/batch_test/{test_tag}/{i}"
             return_path = f"/csimpson/polaris/fusion_return/{test_tag}/{i}"
             run_flow(json_input_path, source_path, destination_path, return_path, machine=machine, label=label, tags=tags, flow_client=fc)
             print(f"Running {label}")

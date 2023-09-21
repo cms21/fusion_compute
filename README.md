@@ -8,7 +8,7 @@ First login to Polaris and/or Perlmutter and do the following things:
 On Polaris:
 ```
 module load conda
-conda activate /eagle/IRIBeta/fusion_env
+conda activate /eagle/IRIBeta/fusion/fusion_env
 ```
 
 ### 2. Create a Globus Endpoint
@@ -44,7 +44,7 @@ conda install globus-compute-sdk globus-automate-client globus-cli python-dotenv
 
 ### 3. Run the setup script
 ```
-python setup_fusion_flow.py
+python setup_flow.py
 ```
 
 When running this script for the first time, you will be asked to authenticate your ALCF credentials with globus.  Running this script should create a new file `input.json` and modify `fusion.env` by adding some new environment variables containing the IDs of the flow and functions.

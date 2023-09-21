@@ -12,7 +12,7 @@
 
 TIME_NOW=$(date +"%Y.%m.%d-%H%M%S")
 SRC_PATH=/csimpson/polaris/fusion
-DEST_PATH=/IRIBeta/test_runs/$TIME_NOW
+DEST_PATH=/IRIBeta/fusion/test_runs/$TIME_NOW
 RET_PATH=/csimpson/polaris/fusion_return/$TIME_NOW
 MACHINE="polaris"
 echo Running on $MACHINE

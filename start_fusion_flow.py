@@ -40,10 +40,12 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
     flow_input = json.load(open(input_json))
 
     # Set machine specific inputs
+    run_directory = None
     if machine == "polaris":
         flow_input["input"]["destination"]["id"] = os.getenv("GLOBUS_ALCF_EAGLE")
         flow_input["input"]["compute_endpoint_id"] = os.getenv("GLOBUS_COMPUTE_POLARIS_ENDPOINT")
-        run_directory = os.path.join("/eagle","/".join(destination_path.split("/")[1:]))
+        if destination_path is not None:
+            run_directory = os.path.join("/eagle","/".join(destination_path.split("/")[1:]))
     elif machine == "perlmutter":
         flow_input["input"]["destination"]["id"] = os.getenv("GLOBUS_NERSC_PERLMUTTER")
         flow_input["input"]["compute_endpoint_id"] = os.getenv("GLOBUS_COMPUTE_PERLMUTTER_ENDPOINT")
@@ -51,10 +53,14 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
     else:
         raise Exception(f"Unknown machine {machine}")
 
+    outputs_dir = None
+    if destination_path is not None:
+        outputs_dir = os.path.join(destination_path,"outputs/")
+
     # Set other inputs
     flow_input["input"]["source"]["outpath"] = return_path
     flow_input["input"]["source"]["path"] = source_path
-    flow_input["input"]["destination"]["outpath"] = os.path.join(destination_path,"outputs/")
+    flow_input["input"]["destination"]["outpath"] = outputs_dir
     flow_input["input"]["destination"]["path"] = destination_path
     flow_input["input"]["recursive_tx"] = True
     flow_input["input"]["compute_function_kwargs"] = {"run_directory": run_directory}
@@ -69,7 +75,7 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
 def arg_parse():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--destination_path', default='/IRIBeta/test_runs/', help=f'Destination path for transfer file(s)')
+    parser.add_argument('--destination_path', default='/IRIBeta/fusion/test_runs/', help=f'Destination path for transfer file(s)')
     parser.add_argument('--source_path', default='/csimpson/polaris/fusion/', help=f'Path of file(s) to transfer')
     parser.add_argument('--return_path', default='/csimpson/polaris/fusion_return/', help=f'Path where files are returned on source machine')
     parser.add_argument('--label', default='transfer-fusion-run', help=f'Flow label')
