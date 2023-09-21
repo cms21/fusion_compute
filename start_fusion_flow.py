@@ -41,15 +41,23 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
 
     # Set machine specific inputs
     run_directory = None
+    app_path = None
+    python_path = None
     if machine == "polaris":
         flow_input["input"]["destination"]["id"] = os.getenv("GLOBUS_ALCF_EAGLE")
         flow_input["input"]["compute_endpoint_id"] = os.getenv("GLOBUS_COMPUTE_POLARIS_ENDPOINT")
+        app_path = "/eagle/IRIBeta/fusion/bin/ionorb_stl_boris2d"
+        python_path = "/eagle/IRIBeta/fusion/bin"
         if destination_path is not None:
             run_directory = os.path.join("/eagle","/".join(destination_path.split("/")[1:]))
     elif machine == "perlmutter":
         flow_input["input"]["destination"]["id"] = os.getenv("GLOBUS_NERSC_PERLMUTTER")
         flow_input["input"]["compute_endpoint_id"] = os.getenv("GLOBUS_COMPUTE_PERLMUTTER_ENDPOINT")
         run_directory = destination_path #check this
+        app_path = "/global/homes/c/csimpson/ionorbgpu/v2/boris2d_stl/bin/ionorb_stl_boris2d"
+        python_path = "/global/homes/c/csimpson/fusion_compute/analysis"
+    elif machine == "summit":
+        raise Exception("Summit not yet implemented")
     else:
         raise Exception(f"Unknown machine {machine}")
 
@@ -63,8 +71,10 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
     flow_input["input"]["destination"]["outpath"] = outputs_dir
     flow_input["input"]["destination"]["path"] = destination_path
     flow_input["input"]["recursive_tx"] = True
-    flow_input["input"]["compute_function_kwargs"] = {"run_directory": run_directory}
-    flow_input["input"]["plot_function_kwargs"] = {"run_directory": run_directory}
+    flow_input["input"]["compute_function_kwargs"] = {"run_directory": run_directory, 
+                                                      "app_path": app_path}
+    flow_input["input"]["plot_function_kwargs"] = {"run_directory": run_directory, 
+                                                   "python_path": python_path}
     
     if verbose:
         print(f"Compute function inputs={flow_input['input']['compute_function_kwargs']}")
@@ -75,7 +85,7 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
 def arg_parse():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--destination_path', default='/IRIBeta/fusion/test_runs/', help=f'Destination path for transfer file(s)')
+    parser.add_argument('--destination_path', default='/IRIBeta/fusion/test_runs/test/', help=f'Destination path for transfer file(s)')
     parser.add_argument('--source_path', default='/csimpson/polaris/fusion/', help=f'Path of file(s) to transfer')
     parser.add_argument('--return_path', default='/csimpson/polaris/fusion_return/', help=f'Path where files are returned on source machine')
     parser.add_argument('--label', default='transfer-fusion-run', help=f'Flow label')
