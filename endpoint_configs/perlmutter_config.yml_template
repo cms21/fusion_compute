@@ -9,7 +9,7 @@ engine:
     account: m3739
     init_blocks: 0
     launcher:
-      overrides: overrides="--gpus-per-node 4 -c 64"
+      overrides: "--gpus-per-node 4 -c 64"
       type: SrunLauncher
     max_blocks: 1
     min_blocks: 0
@@ -18,7 +18,7 @@ engine:
     scheduler_options: '#SBATCH -C gpu'
     type: SlurmProvider
     walltime: 00:10:00
-    worker_init: module load python; conda activate fusion; cd $HOME/.globus_compute/perlmutter
+    worker_init: module load python; source activate /global/common/software/m3739/perlmutter/conda_envs/globus; cd $HOME/.globus_compute/perlmutter
   strategy:
     max_idletime: 300
     type: SimpleStrategy
