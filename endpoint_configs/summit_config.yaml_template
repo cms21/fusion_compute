@@ -3,7 +3,6 @@ engine:
     ifname: ib0
     type: address_by_interface
   available_accelerators: 6
-  max_workers: 6
   cpu_affinity: block
   prefetch_capacity: 0
   provider:
@@ -14,7 +13,7 @@ engine:
       overrides: '-g6 -c6 -a1 -bnone --smpiargs="-disable_gpu_hooks"'
     max_blocks: 1
     min_blocks: 0
-    nodes_per_block: 1
+    nodes_per_block: 2
     cores_per_node: 6
     queue: debug
     type: LSFProvider
