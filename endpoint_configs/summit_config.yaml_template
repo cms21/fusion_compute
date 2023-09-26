@@ -1,0 +1,27 @@
+engine:
+  address:
+    ifname: ib0
+    type: address_by_interface
+  available_accelerators: 6
+  cpu_affinity: block
+  prefetch_capacity: 0
+  provider:
+    project: GEN008
+    init_blocks: 0
+    launcher:
+      type: JsrunLauncher
+      overrides: '-g6 -c6 -a1 -bnone --smpiargs="-disable_gpu_hooks"'
+    max_blocks: 1
+    min_blocks: 0
+    nodes_per_block: 2
+    cores_per_node: 6
+    queue: debug
+    type: LSFProvider
+    walltime: 00:10:00
+    worker_init: module load python; source activate fusion
+  strategy:
+    max_idletime: 300
+    type: SimpleStrategy
+  type: GlobusComputeEngine
+  worker_logdir_root: $MEMBERWORK/gen008
+  #worker_port_range: (50000, 55000)
