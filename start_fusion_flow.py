@@ -12,11 +12,16 @@ machine_settings = {"polaris":{"transfer_endpoint": os.getenv("GLOBUS_ALCF_EAGLE
                                    "bin_path": "/eagle/IRIBeta/fusion/bin",
                                    "scratch_path": "/IRIBeta/fusion/",
                                    "facility": "alcf"},
-                        "perlmutter":{"transfer_endpoint": os.getenv("GLOBUS_NERSC_PERLMUTTER"),
+                    "perlmutter":{"transfer_endpoint": os.getenv("GLOBUS_NERSC_PERLMUTTER"),
                                     "compute_endpoint": os.getenv("GLOBUS_COMPUTE_PERLMUTTER_ENDPOINT"),
                                     "bin_path": "/global/common/software/m3739/perlmutter/ionorb/bin/",
-                                    "scratch_path": "/pscratch/sd/",
-                                    "facility": "nersc"}}
+                                    "scratch_path": "/pscratch/sd/c/csimpson", ### User needs to change this!
+                                    "facility": "nersc"},
+                    "summit":{"transfer_endpoint": os.getenv("GLOBUS_OLCF"),
+                              "compute_endpoint": os.getenv("GLOBUS_COMPUTE_SUMMIT_ENDPOINT"),
+                              "bin_path": "/ccs/home/simpson/bin/",
+                               "scratch_path": "/gpfs/alpine/gen008/scratch/simpson/", ### User needs to change this!
+                               "facility": "olcf"}}
 
 def endpoint_active(compute_endpoint_id):
     gc = globus_compute_sdk.Client()
@@ -29,11 +34,11 @@ def endpoint_active(compute_endpoint_id):
     else:
         return True
     
-def check_auth(machine,verbose=False):
+def check_username(machine,verbose=False):
     facility = machine_settings[machine]["facility"]
-    ret=os.popen(f"globus session show | grep {facility}").read()
+    ret=os.popen(f"globus whoami --linked-identities | grep {facility}").read()
     if verbose:
-        print(f"check auth for {machine}")
+        print(f"check username for {machine}")
         print(f"{ret}")
     if facility in ret:
         return ret.split("@")[0]
@@ -74,7 +79,6 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
     settings = machine_settings[machine]
 
     # If destination_relpath is set, override destination_path
-    print(f"destination_relpath: {destination_relpath}")
     if destination_relpath != None:
         if verbose:
             print(f"Using destination_relpath")
@@ -84,15 +88,15 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
     # Machine specific special cases
     if machine == "polaris":
         run_directory = os.path.join("/eagle","/".join(str(destination_path).split("/")[1:]))    
-    if machine == "perlmutter" and destination_relpath != None:
-        username = check_auth(machine,verbose=verbose)
-        if verbose:
-            print(f"username: {username}")
-        if username != None:
-            destination_path = os.path.join(settings["scratch_path"],username[0],username,destination_relpath)
-            run_directory = destination_path
-        else:
-            raise Exception("Need to establish auth for nersc to use destination_relpath; try running without destination_relpath first to establish auth")
+    # if machine == "perlmutter" and destination_relpath != None:
+    #     username = check_username(machine,verbose=verbose)
+    #     if verbose:
+    #         print(f"username: {username}")
+    #     if username != None:
+    #         destination_path = os.path.join(settings["scratch_path"],username[0],username,destination_relpath)
+    #         run_directory = destination_path
+    #     else:
+    #         raise Exception("Need to establish username for nersc to use destination_relpath; try running without destination_relpath first to establish auth")
     
     # Set flow inputs
     flow_input["input"]["destination"]["id"] = settings["transfer_endpoint"]
@@ -121,6 +125,7 @@ def arg_parse():
     parser.add_argument('--destination_relpath', default=None, help=f'Destination path for transfer file(s) relative to base path')
     parser.add_argument('--return_path', default='/csimpson/polaris/fusion_return/', help=f'Path where files are returned on source machine')
     parser.add_argument('--label', default='transfer-fusion-run', help=f'Flow label')
+    parser.add_argument('--tags', default={}, help=f'Flow label')
     parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings.keys())
     parser.add_argument('--input_json', help='Path to the flow input .json file',
                         default="./input.json")
