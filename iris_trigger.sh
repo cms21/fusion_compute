@@ -12,9 +12,20 @@
 
 TIME_NOW=$(date +"%Y.%m.%d-%H%M%S")
 SRC_PATH=/csimpson/polaris/fusion
-DEST_PATH=/IRIBeta/fusion/test_runs/$TIME_NOW
+DEST_RELPATH=test_runs/$TIME_NOW
 RET_PATH=/csimpson/polaris/fusion_return/$TIME_NOW
 MACHINE="polaris"
+if [ $# -eq 2 ]; then
+    if [ $1 = "--machine" ]; then
+	if [[ $2 = "polaris" || $2 = "perlmutter" || $2 = "summit" ]]; then
+	    MACHINE=$2
+	fi
+    fi
+fi
 echo Running on $MACHINE
-echo Return path is $RET_PATH
-python start_fusion_flow.py --machine $MACHINE --dynamic --source_path $SRC_PATH --destination_path $DEST_PATH --return_path $RET_PATH --label "iris_trigger_flow"
+python start_fusion_flow.py --machine $MACHINE \
+                            --dynamic \
+							--source_path $SRC_PATH \
+							--destination_relpath $DEST_RELPATH \
+							--return_path $RET_PATH \
+							--label "iris_to_"$MACHINE"_"$TIME_NOW

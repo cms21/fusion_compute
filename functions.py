@@ -2,6 +2,7 @@ import globus_compute_sdk
 from dotenv import load_dotenv
 import os
 import argparse
+from start_fusion_flow import machine_settings
 
 load_dotenv(dotenv_path="./fusion.env")
 
@@ -74,6 +75,10 @@ def make_plots(python_path, run_directory, hits_file="out.hits.els.txt"):
             shutil.copyfile(plot,os.path.join(run_directory,"outputs",plot))
     return "Success",plots
 
+def hello_world():
+    import os
+    return f"Hello CUDA device {os.getenv('CUDA_VISIBLE_DEVICES')}, hello OMP {os.getenv('OMP_NUM_THREADS')}"
+
 def register_function(function):
     
     if function == ionorb_wrapper:
@@ -90,20 +95,10 @@ def register_function(function):
         f.write(f"{envvarname}={fusion_func}\n")
     return f"{envvarname}={fusion_func}"
 
-# def untar(tarfile):
-#     import subprocess
-
-#     command = f"tar xvf {tarfile}"
-#     res = subprocess.run(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-#     if res.returncode != 0:
-#         raise Exception(f"Untar failed: {res.returncode} stdout='{res.stdout.decode('utf-8')}' stderr='{res.stderr.decode('utf-8')}'")
-#     else:
-#         return res.returncode, res.stdout.decode("utf-8"), res.stderr.decode("utf-8")
-
-
 def arg_parse():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test', default=False, action='store_true', help=f'Test Function')
+    parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings.keys())
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -111,35 +106,28 @@ if __name__ == '__main__':
     args = arg_parse()
 
     if args.test:
-        print("Testing functions")
-        functions = [ionorb_wrapper, make_plots, heatmapping]
+        machine = args.machine
+        settings = machine_settings[machine]
+        if machine == "polaris":
+            settings['scratch_path'] = "/eagle"+settings['scratch_path']
+
+        print(f"Testing functions on {machine}")
+        functions = [hello_world, ionorb_wrapper, heatmapping]
         for function in functions:
-            print(function)
+            print(function) 
+            gce = globus_compute_sdk.Executor(endpoint_id=settings["compute_endpoint"])
 
-            # gce = globus_compute_sdk.Executor(endpoint_id=os.getenv("GLOBUS_COMPUTE_PERLMUTTER_ENDPOINT"))
-            
-            # if function == ionorb_wrapper:
-            #     params= ["/global/homes/c/csimpson/ionorbgpu/v2/boris2d_stl/bin/ionorb_stl_boris2d", 
-            #             "/global/homes/c/csimpson/ionorb_test"]
-            # else:
-            #     params= ["/global/homes/c/csimpson/fusion_compute/analysis",
-            #              "/global/homes/c/csimpson/ionorb_test",]
-                
-            gce = globus_compute_sdk.Executor(endpoint_id=os.getenv("GLOBUS_COMPUTE_POLARIS_ENDPOINT"))
-            
+            params = []
             if function == ionorb_wrapper:
-                params= ["/eagle/IRIBeta/fusion/bin/ionorb_stl_boris2d", 
-                        "/eagle/datascience/csimpson/fusion/dummy_data"]
-            else:
-                params= ["/eagle/IRIBeta/fusion/bin",
-                         "/eagle/datascience/csimpson/fusion/dummy_data",]
-
-
+                params= [os.path.join(settings["bin_path"],"ionorb_stl_boris2d"), 
+                         os.path.join(settings["scratch_path"],"test_runs/test")]
+            elif function == heatmapping:
+                params= [settings["bin_path"], 
+                         os.path.join(settings["scratch_path"],"test_runs/test")]
+            
             future = gce.submit(function,*params)
-            try:
-                print(future.result())
-            except Exception as e:
-                print(e)
+            print(future.result())
+            
     else:
         print("Registering functions")
         functions = [ionorb_wrapper,make_plots,heatmapping]
