@@ -4,12 +4,12 @@ import time, uuid
 
 if __name__ == '__main__':
 
-    nruns = 16
-    injection_wait_time = 1
+    nruns = 12
+    injection_wait_time = 0
     tags = []
     json_input_path = "./input.json"
     label_base = f"fusion-batch-test"
-    machine = "polaris"
+    machine = "summit"
     flow_input = set_flow_input(machine, json_input_path, None, None, None)
 
     test_tag = uuid.uuid4()
@@ -26,8 +26,8 @@ if __name__ == '__main__':
         for i in range(nruns):
             label = label_base+f"-{i+1}/{nruns}"
             source_path = "/csimpson/polaris/fusion"
-            destination_path = f"/IRIBeta/fusion/test_runs/batch_test/{test_tag}/{i}"
+            destination_relpath = f"test_runs/batch_test/{test_tag}/{i}"
             return_path = f"/csimpson/polaris/fusion_return/{test_tag}/{i}"
-            run_flow(json_input_path, source_path, destination_path, return_path, machine=machine, label=label, tags=tags, flow_client=fc)
+            run_flow(json_input_path, source_path, None, return_path, destination_relpath=destination_relpath, machine=machine, label=label, tags=tags, flow_client=fc)
             print(f"Running {label}")
             time.sleep(injection_wait_time)
