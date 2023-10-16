@@ -26,6 +26,8 @@ if [ $# -gt 0 ]; then
 			shift 1
 			if [[ $1 = "polaris" || $1 = "perlmutter" || $1 = "summit" ]]; then
 	    		MACHINE=$1
+			else
+				echo Machine not recognized
 			fi
     	fi
 		shift 1
