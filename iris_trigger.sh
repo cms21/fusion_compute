@@ -44,4 +44,4 @@ python start_fusion_flow.py --machine $MACHINE $DYNAMIC \
 							--source_path $SRC_PATH \
 							--destination_relpath $DEST_RELPATH \
 							--return_path $RET_PATH \
-							--label "iris_to_"$MACHINE"_"$TIME_NOW
+							--label "iris_to_"$MACHINE$DYNAMIC"_"$TIME_NOW
