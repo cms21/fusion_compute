@@ -15,16 +15,30 @@ SRC_PATH=/csimpson/polaris/fusion
 DEST_RELPATH=test_runs/$TIME_NOW
 RET_PATH=/csimpson/polaris/fusion_return/$TIME_NOW
 MACHINE="polaris"
-if [ $# -eq 2 ]; then
-    if [ $1 = "--machine" ]; then
-	if [[ $2 = "polaris" || $2 = "perlmutter" || $2 = "summit" ]]; then
-	    MACHINE=$2
-	fi
-    fi
+DYNAMIC=""
+i=1
+if [ $# -gt 0 ]; then
+	while [ $i -le $# ]; do
+		if [ $1 == "--dynamic" ]; then
+			DYNAMIC="--dynamic"
+		fi
+		if [ $1 == "--machine" ]; then
+			shift 1
+			if [[ $1 = "polaris" || $1 = "perlmutter" || $1 = "summit" ]]; then
+	    		MACHINE=$1
+			fi
+    	fi
+		shift 1
+	done
 fi
-echo Running on $MACHINE
-python start_fusion_flow.py --machine $MACHINE \
-                            --dynamic \
+
+if [ "$DYNAMIC" == "" ]; then
+	echo Running on $MACHINE
+else
+	echo Running in dynamic mode, first try machine $MACHINE
+fi
+
+python start_fusion_flow.py --machine $MACHINE $DYNAMIC \
 							--source_path $SRC_PATH \
 							--destination_relpath $DEST_RELPATH \
 							--return_path $RET_PATH \
