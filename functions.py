@@ -6,12 +6,12 @@ from start_fusion_flow import machine_settings
 
 load_dotenv(dotenv_path="./fusion.env")
 
-def ionorb_wrapper(app_path, run_directory, config_path="ionorb_stl2d_boris.config", outfile="out.hits.els.txt"):
+def ionorb_wrapper(run_directory, config_path="ionorb_stl2d_boris.config", outfile="out.hits.els.txt"):
     import subprocess, os, time, shutil
 
     start = time.time()
     os.chdir(run_directory)
-    command = f"{app_path} {config_path}"
+    command = f"ionorb_stl_boris2d {config_path}"
     res = subprocess.run(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     end = time.time()
     runtime = end - start
@@ -119,8 +119,7 @@ if __name__ == '__main__':
 
             params = []
             if function == ionorb_wrapper:
-                params= [os.path.join(settings["bin_path"],"ionorb_stl_boris2d"), 
-                         os.path.join(settings["scratch_path"],"test_runs/test")]
+                params= [os.path.join(settings["scratch_path"],"test_runs/test")]
             elif function == heatmapping:
                 params= [settings["bin_path"], 
                          os.path.join(settings["scratch_path"],"test_runs/test")]

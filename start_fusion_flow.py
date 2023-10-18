@@ -101,8 +101,7 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
     # Set flow inputs
     flow_input["input"]["destination"]["id"] = settings["transfer_endpoint"]
     flow_input["input"]["compute_endpoint_id"] = settings["compute_endpoint"]
-    flow_input["input"]["compute_function_kwargs"] = {"run_directory": run_directory, 
-                                                      "app_path": os.path.join(settings["bin_path"],"ionorb_stl_boris2d")}
+    flow_input["input"]["compute_function_kwargs"] = {"run_directory": run_directory}
     flow_input["input"]["plot_function_kwargs"] = {"run_directory": run_directory, 
                                                    "python_path": settings["bin_path"]}
     flow_input["input"]["source"]["outpath"] = return_path

@@ -33,7 +33,8 @@ engine:
         scheduler_options: "#PBS -l filesystems=home:eagle"
 
         # Node setup: activate necessary conda environment and such
-        worker_init: "module load conda; conda activate /eagle/IRIBeta/fusion_env; cd <YOUR_RUN_DIRECTORY>"
+        worker_init: "module load conda; conda activate /eagle/IRIBeta/fusion_env; export PATH=$PATH:/eagle/IRIBeta/fusion/b\
+in/; cd <YOUR_RUN_DIRECTORY>"
 
         walltime: 00:60:00
         nodes_per_block: 1

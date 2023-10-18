@@ -18,7 +18,8 @@ engine:
     queue: debug
     type: LSFProvider
     walltime: 00:10:00
-    worker_init: module load python; source activate fusion
+    # Here, activate conda module and set path to executable
+    worker_init: module load python; source activate fusion; export PATH=$PATH:/ccs/home/simpson/bin/
   strategy:
     max_idletime: 300
     type: SimpleStrategy
