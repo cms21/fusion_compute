@@ -11,9 +11,9 @@
 # ionorb_generate_config
 
 TIME_NOW=$(date +"%Y.%m.%d-%H%M%S")
-SRC_PATH=/csimpson/polaris/fusion
+SRC_PATH=/home/simpsonc/fusion
 DEST_RELPATH=test_runs/$TIME_NOW
-RET_PATH=/csimpson/polaris/fusion_return/$TIME_NOW
+RET_PATH=/home/simpsonc/fusion_return/$TIME_NOW
 MACHINE="polaris"
 DYNAMIC=""
 i=1
