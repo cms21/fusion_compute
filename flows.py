@@ -74,9 +74,9 @@ basic_flow_definition = {
 # 4. Transfer results of ionorb and postprocessing from machine B to machine A
 heatmap_flow_definition = {
     "Comment": "Run Fusion application",
-    "StartAt": "Transfer_In",
+    "StartAt": "TransferIn",
     "States": {
-        "Transfer_In": {
+        "TransferIn": {
             "Comment": "Transfer files",
             "Type": "Action",
             "ActionUrl": "https://actions.automate.globus.org/transfer/transfer",
