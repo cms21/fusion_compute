@@ -60,7 +60,7 @@ You can start a flow by using the python script:
 ```
 python start_fusion_flow.py --source_path <SRC_PATH> --destination_path <DEST_PATH> --return_path <RET_PATH>
 ```
-You will be prompted to validate your globus credentials the first time you run this script.  Additionally, you may recieve an email from the Globus service saying your flow "requires attention".  If you do recieve this email, follow its instructions for resuming the flow from the CLI (it will be a command that starts with `globus-automate`).  After validating your credentials for this first run, you should not have to validate again (or not for a longish period of time).
+You will be prompted to validate your globus credentials the first time you run this script.  Additionally, you may recieve an email from the Globus service saying your flow "requires attention".  If you do recieve this email, restart the flow from the same CLI with this command `globus-automate flow run-resume --query-for-inactive-reason --flow-id <FLOW_ID> <RUN_ID>`.  Currently, this code base uses the `globus-automate` client so you need to use the `globus-automate` CLI call; the email you recieve will give you a command that starts with `globus flows` but do not use this, as it assumes a different type of client.  We will be updating this repository to use the newer globus client, but until that change has been made use the `globus-automate` CLI tool.  This email will include the `RUN_ID`.  After validating your credentials for this first run with the `globus-automate` tool, you should not have to validate again.
 
 The path `<SRC_PATH>` and `<RET_PATH>` should be paths on the source machine and `<DEST_PATH>` should be a path on the destination machine (eagle).
 
