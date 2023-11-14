@@ -3,6 +3,7 @@ import globus_compute_sdk
 from dotenv import load_dotenv
 import os, json
 import argparse
+import random
 
 load_dotenv(dotenv_path="./fusion.env")
 flow_id = os.getenv("GLOBUS_FLOW_ID")
@@ -25,7 +26,12 @@ machine_settings = {"polaris":{"transfer_endpoint": os.getenv("GLOBUS_ALCF_EAGLE
 
 def endpoint_active(compute_endpoint_id):
     gc = globus_compute_sdk.Client()
-    endpoint_status = gc.get_endpoint_status(compute_endpoint_id)['status']
+    try:
+        endpoint_status = gc.get_endpoint_status(compute_endpoint_id)['status']
+    except Exception as e:
+        print(f"Endpoint {endpoint_metadata['name']} is not responsive")
+        return False
+
     endpoint_metadata = gc.get_endpoint_metadata(compute_endpoint_id)
     if endpoint_status != 'online':
         print(f"Endpoint {endpoint_metadata['name']} is {endpoint_status}")
@@ -34,28 +40,42 @@ def endpoint_active(compute_endpoint_id):
     else:
         return True
     
-def check_username(machine,verbose=False):
-    facility = machine_settings[machine]["facility"]
-    ret=os.popen(f"globus whoami --linked-identities | grep {facility}").read()
-    if verbose:
-        print(f"check username for {machine}")
-        print(f"{ret}")
-    if facility in ret:
-        return ret.split("@")[0]
-    else:
-        print(f"WARNING: Auth not yet established for {machine}")
-        return None
+# def check_username(machine,verbose=False):
+#     facility = machine_settings[machine]["facility"]
+#     ret=os.popen(f"globus whoami --linked-identities | grep {facility}").read()
+#     if verbose:
+#         print(f"check username for {machine}")
+#         print(f"{ret}")
+#     if facility in ret:
+#         return ret.split("@")[0]
+#     else:
+#         print(f"WARNING: Auth not yet established for {machine}")
+#         return None
     
-def run_flow(input_json, source_path, destination_path, return_path, machine="polaris", destination_relpath=None, dynamic=True, label=None, tags=None, flow_client=None,verbose=False):
+def run_flow(input_json, 
+             source_path, 
+             destination_path, 
+             return_path, 
+             machine="polaris", 
+             destination_relpath=None, 
+             dynamic=True, label=None, 
+             tags=None, 
+             flow_client=None,
+             verbose=False, 
+             random_machine_iter=None):
     
     endpoint_status = endpoint_active(machine_settings[machine]["compute_endpoint"])
-    if dynamic and endpoint_status == False and destination_relpath != None:
+    if random_machine_iter != None:
+        if random.random() < 1./random_machine_iter:
+            print(f"***** Simulating machine failure for {machine}")
+            endpoint_status = False
+    if (dynamic or random_machine_iter != None) and endpoint_status == False and destination_relpath != None:
         for alternate_machine in machine_settings.keys():
             if alternate_machine == machine:
                 continue
             endpoint_status = endpoint_active(machine_settings[alternate_machine]["compute_endpoint"])
             if endpoint_status:
-                print(f"Switching to machine {alternate_machine} instead")
+                print(f"***** Switching to {alternate_machine}")
                 machine = alternate_machine
                 break
     
@@ -68,7 +88,7 @@ def run_flow(input_json, source_path, destination_path, return_path, machine="po
         flow_action = flow_client.run_flow(flow_id, flow_scope, flow_input, label=label, tags=tags)
         if verbose:
             print(f"Flow ID: {flow_action['flow_id']} \nFlow title: {flow_action['flow_title']} \nRun ID: {flow_action['run_id']} \nRun label: {flow_action['label']} \nRun owner: {flow_action['run_owner']}")        
-        return flow_action
+        return flow_action, machine
     else:
         return None
 
@@ -143,7 +163,7 @@ if __name__ == '__main__':
         print(f"Path on destination endpoint is {args.destination_path}")
         print(f"Path on local machine to input.json is {args.input_json}")
         print(f"Flow label {args.label}")
-    run_flow(args.input_json, 
+    run, run_machine = run_flow(args.input_json, 
              args.source_path, 
              args.destination_path, 
              args.return_path, 
@@ -151,4 +171,6 @@ if __name__ == '__main__':
              label=args.label,
              destination_relpath=args.destination_relpath,
              dynamic=args.dynamic,
-            verbose=args.verbose)
+             verbose=args.verbose,)
+    run_id = run["run_id"]
+    print(f"Run ID {run_id}")
