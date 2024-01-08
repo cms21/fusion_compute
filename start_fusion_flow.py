@@ -21,7 +21,12 @@ machine_settings = {"polaris":{"transfer_endpoint": os.getenv("GLOBUS_ALCF_EAGLE
                               "compute_endpoint": os.getenv("GLOBUS_COMPUTE_SUMMIT_ENDPOINT"),
                               "bin_path": "/ccs/home/simpson/bin/",
                                "scratch_path": "/gpfs/alpine/gen008/scratch/simpson/", ### User needs to change this!
-                               "facility": "olcf"}}
+                               "facility": "olcf"},
+                    "omega":{"transfer_endpoint": os.getenv("GLOBUS_D3D"),
+                              "compute_endpoint": os.getenv("GLOBUS_COMPUTE_OMEGA_LOCAL_ENDPOINT"),
+                              "bin_path": "/fusion/projects/codes/ionorb/bin",
+                               "scratch_path": "/home/simpsonc", ### User needs to change this!
+                               "facility": "d3d"}}
 
 def endpoint_active(compute_endpoint_id):
     gc = globus_compute_sdk.Client()

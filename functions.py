@@ -79,6 +79,33 @@ def hello_world():
     import os
     return f"Hello CUDA device {os.getenv('CUDA_VISIBLE_DEVICES')}, hello OMP {os.getenv('OMP_NUM_THREADS')}"
 
+
+def make_input_scripts(run_directory, shot=164869, stime=3005, efitnum="EFIT01", profdata=1, beam_num=1, energykev="FULL", nparts=1000):
+    import os, time, subprocess, glob
+
+    start = time.time()
+    os.chdir(run_directory)
+
+    # Create B field file
+    command = f"ionorb_createB {shot} {stime} {efitnum}"
+    res = subprocess.run(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if res.returncode != 0 or len(glob.glob("B_*.txt")) == 0:
+        end = time.time()
+        runtime = end - start
+        raise Exception(f"createB failed: {res.returncode} stdout='{res.stdout.decode('utf-8')}' stderr='{res.stderr.decode('utf-8')}' runtime={runtime} command={command}")
+
+    # Create birth file
+    command = f"ionorb_create_birth {shot} {stime} {efitnum} {profdata} {beam_num} {energykev} {nparts}"
+    res = subprocess.run(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if res.returncode != 0 or len(glob.glob("birth_*.txt")) == 0:
+        end = time.time()
+        runtime = end - start
+        raise Exception(f"create_birth failed: {res.returncode} stdout='{res.stdout.decode('utf-8')}' stderr='{res.stderr.decode('utf-8')}' runtime={runtime} command={command}")
+    
+    end = time.time()
+    runtime = end - start
+    return f"Input files created, runtime={runtime}"
+
 def register_function(function):
     
     if function == ionorb_wrapper:
@@ -112,13 +139,13 @@ if __name__ == '__main__':
             settings['scratch_path'] = "/eagle"+settings['scratch_path']
 
         print(f"Testing functions on {machine}")
-        functions = [hello_world, ionorb_wrapper, heatmapping]
+        functions = [hello_world, make_input_scripts]#, ionorb_wrapper, heatmapping]
         for function in functions:
             print(function) 
             gce = globus_compute_sdk.Executor(endpoint_id=settings["compute_endpoint"])
 
             params = []
-            if function == ionorb_wrapper:
+            if function == ionorb_wrapper or function == make_input_scripts:
                 params= [os.path.join(settings["scratch_path"],"test_runs/test")]
             elif function == heatmapping:
                 params= [settings["bin_path"], 
