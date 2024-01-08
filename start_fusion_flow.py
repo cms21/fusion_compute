@@ -29,7 +29,7 @@ def endpoint_active(compute_endpoint_id):
     try:
         endpoint_status = gc.get_endpoint_status(compute_endpoint_id)['status']
     except Exception as e:
-        print(f"Endpoint {endpoint_metadata['name']} is not responsive")
+        print(f"Endpoint is not responsive")
         return False
 
     endpoint_metadata = gc.get_endpoint_metadata(compute_endpoint_id)
@@ -40,17 +40,6 @@ def endpoint_active(compute_endpoint_id):
     else:
         return True
     
-# def check_username(machine,verbose=False):
-#     facility = machine_settings[machine]["facility"]
-#     ret=os.popen(f"globus whoami --linked-identities | grep {facility}").read()
-#     if verbose:
-#         print(f"check username for {machine}")
-#         print(f"{ret}")
-#     if facility in ret:
-#         return ret.split("@")[0]
-#     else:
-#         print(f"WARNING: Auth not yet established for {machine}")
-#         return None
     
 def run_flow(input_json, 
              source_path, 
