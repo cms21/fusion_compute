@@ -9,7 +9,11 @@ RESOURCE_SERVER = globus_sdk.FlowsClient.resource_server
 
 # tutorial client ID
 # we recommend replacing this with your own client for any production use-cases
-CLIENT_ID = "48f99c28-1a76-4c48-8021-bde33aa6fac7"
+# CLIENT_ID = "48f99c28-1a76-4c48-8021-bde33aa6fac7"
+
+#New client id generated for ionorb_demo
+CLIENT_ID = "98df61f4-264f-491e-bb7a-6b930bf050c0"
+
 
 NATIVE_CLIENT = globus_sdk.NativeAppAuthClient(CLIENT_ID)
 
