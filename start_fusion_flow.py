@@ -72,7 +72,8 @@ def run_flow(input_json, source_path, destination_path, return_path, machine="po
         flow_scope = flow['globus_auth_scope']
         flow_action = flow_client.run_flow(flow_id, flow_scope, flow_input, label=label, tags=tags)
         if verbose:
-            print(f"Flow ID: {flow_action['flow_id']} \nFlow title: {flow_action['flow_title']} \nRun ID: {flow_action['run_id']} \nRun label: {flow_action['label']} \nRun owner: {flow_action['run_owner']}")        
+            print(f"Flow ID: {flow_action['flow_id']} \nFlow title: {flow_action['flow_title']} \nRun ID: {flow_action['run_id']} \nRun label: {flow_action['label']} \nRun owner: {flow_action['run_owner']}")
+        print(f"run id: {flow_action['run_id']}")
         return flow_action
     else:
         return None
