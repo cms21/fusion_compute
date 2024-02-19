@@ -97,11 +97,19 @@ def make_input_scripts(run_directory, shot=164869, stime=3005, efitnum="EFIT01",
     # Create birth file
     command = f"ionorb_create_birth {shot} {stime} {efitnum} {profdata} {beam_num} {energykev} {nparts}"
     res = subprocess.run(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if res.returncode != 0 or len(glob.glob("birth_*.txt")) == 0:
+    if res.returncode != 0 or len(glob.glob("birth*.dat")) == 0:
         end = time.time()
         runtime = end - start
         raise Exception(f"create_birth failed: {res.returncode} stdout='{res.stdout.decode('utf-8')}' stderr='{res.stderr.decode('utf-8')}' runtime={runtime} command={command}")
     
+    # Create config file
+    command = f"/home/simpsonc/ionorbgpu/v2/tools/ionorb_generate_config"
+    res = subprocess.run(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if res.returncode != 0 or len(glob.glob("*.config")) == 0 or len(glob.glob("*.stl")) == 0:
+        end = time.time()
+        runtime = end - start
+        raise Exception(f"config failed: {res.returncode} {len(glob.glob('*.config'))} {len(glob.glob('*.stl'))} stdout='{res.stdout.decode('utf-8')}' stderr='{res.stderr.decode('utf-8')}' runtime={runtime} command={command}")
+
     end = time.time()
     runtime = end - start
     return f"Input files created, runtime={runtime}"
@@ -114,6 +122,8 @@ def register_function(function):
         envvarname = "PLOT_FUNCTION_ID"
     elif function == heatmapping:
         envvarname = "HEATMAP_FUNCTION_ID"
+    elif function == make_input_scripts:
+        envvarname = "INPUTS_FUNCTION_ID"
     else:
         return "Unknown function"
     gc = globus_compute_sdk.Client()
@@ -156,6 +166,6 @@ if __name__ == '__main__':
             
     else:
         print("Registering functions")
-        functions = [ionorb_wrapper,make_plots,heatmapping]
+        functions = [ionorb_wrapper,make_plots,heatmapping,make_input_scripts]
         for function in functions:
             register_function(function)

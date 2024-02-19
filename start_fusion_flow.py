@@ -104,6 +104,8 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
     #         raise Exception("Need to establish username for nersc to use destination_relpath; try running without destination_relpath first to establish auth")
     
     # Set flow inputs
+    flow_input["input"]["inputs_endpoint_id"] = machine_settings["omega"]["compute_endpoint"]
+    flow_input["input"]["inputs_function_kwargs"] = {"run_directory": source_path}
     flow_input["input"]["destination"]["id"] = settings["transfer_endpoint"]
     flow_input["input"]["compute_endpoint_id"] = settings["compute_endpoint"]
     flow_input["input"]["compute_function_kwargs"] = {"run_directory": run_directory}

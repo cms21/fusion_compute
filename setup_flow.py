@@ -1,6 +1,6 @@
 from globus_automate_client import create_flows_client
 from dotenv import load_dotenv
-from flows import heatmap_flow_definition as fusion_flow_definition
+from flows import inputs_flow_definition as fusion_flow_definition
 from flows import fusion_input
 import os
 import json
@@ -42,6 +42,7 @@ if __name__ == '__main__':
     # Create input file with the correct ids for endpoints and functions
     fusion_input["input"]["compute_function_id"] = os.getenv("IONORB_FUNCTION_ID")
     fusion_input["input"]["plot_function_id"] = os.getenv("HEATMAP_FUNCTION_ID")
+    fusion_input["input"]["inputs_function_id"] = os.getenv("INPUTS_FUNCTION_ID")
 
     fusion_input["input"]["source"]["id"] = os.getenv("GLOBUS_TRANSFER_ENDPOINT_SRC")
 
