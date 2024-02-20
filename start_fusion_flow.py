@@ -1,13 +1,11 @@
-# from globus_automate_client import create_flows_client
-from get_flow_client import get_flows_client
+from utils import get_specific_flow_client
 import globus_compute_sdk
 from dotenv import load_dotenv
 import os, json
 import argparse
-from globus_cli.login_manager import LoginManager
-import subprocess
 
 load_dotenv(dotenv_path="./fusion.env")
+client_id = os.getenv("CLIENT_ID")
 flow_id = os.getenv("GLOBUS_FLOW_ID")
 
 machine_settings = {"polaris":{"transfer_endpoint": os.getenv("GLOBUS_ALCF_EAGLE"),
@@ -23,7 +21,7 @@ machine_settings = {"polaris":{"transfer_endpoint": os.getenv("GLOBUS_ALCF_EAGLE
                     "summit":{"transfer_endpoint": os.getenv("GLOBUS_OLCF"),
                               "compute_endpoint": os.getenv("GLOBUS_COMPUTE_SUMMIT_ENDPOINT"),
                               "bin_path": "/ccs/home/simpson/bin/",
-                               "scratch_path": "/gpfs/alpine/gen008/scratch/simpson/", ### User needs to change this!
+                               "scratch_path": "/gpfs/alpine2/gen008/scratch/simpson/", ### User needs to change this!
                                "facility": "olcf"}}
 
 def endpoint_active(compute_endpoint_id):
@@ -65,43 +63,19 @@ def run_flow(input_json, source_path, destination_path, return_path,
                                 destination_relpath=destination_relpath,
                                 verbose=verbose)
     if endpoint_status:
-        # Copy CLI
+
         if flow_client is None:
-            login_manager = LoginManager()
-            flow_client = login_manager.get_specific_flow_client(flow_id)
+            #collection_ids = [flow_input["input"]["source"]["id"], flow_input["input"]["destination"]["id"]]
+            collection_ids = [flow_input["input"]["destination"]["id"]]
+
+            flow_client = get_specific_flow_client(flow_id=flow_id,
+                                                   client_id=client_id,
+                                                   collection_ids=collection_ids)
+
+        print("flow client",flow_client)
         flow_action = flow_client.run_flow(body=flow_input,
                                             label=label,
-                                            tags=tags,)
-        
-
-        # Use globus_sdk client
-        #if flow_client is None:
-        # flow_client = get_flows_client(flow_id=flow_id)
-        # flow_action = flow_client.run_flow(flow_input, 
-        #                                    label=label, 
-        #                                    tags=tags)
-        # print(flow_action)
-
-        # Use globus_automate_client
-        # if flow_client is None:
-        #     flow_client = create_flows_client()
-        # flow = flow_client.get_flow(flow_id)
-        # flow_scope = flow['globus_auth_scope']
-        # flow_action = flow_client.run_flow(flow_id, flow_scope, flow_input, label=label, tags=tags)
-
-        # Wrap CLI command
-        # with open("run.json", "w") as file:
-        #     json.dump(flow_input, file)
-        # if verbose:
-        #     print("input json: ",flow_input)
-        # label = (label if label != None else '')
-        # tags_string = ''
-        # if tags != None:
-        #     for tag in tags:
-        #         tags_string += "--tag "
-        #         tags_string += tag+" "
-        # ret = subprocess.run(f'globus flows start --input run.json --label {label} {tags_string} {flow_id}'.split())
-        # flow_action=ret        
+                                            tags=tags,)      
         return flow_action
     else:
         return None
@@ -146,9 +120,9 @@ def arg_parse():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--destination_path', default='/IRIBeta/fusion/test_runs/test/', help=f'Destination path for transfer file(s)')
-    parser.add_argument('--source_path', default='/csimpson/polaris/fusion/', help=f'Path of file(s) to transfer')
+    parser.add_argument('--source_path', default='/home/simpsonc/fusion', help=f'Path of file(s) to transfer')
     parser.add_argument('--destination_relpath', default=None, help=f'Destination path for transfer file(s) relative to base path')
-    parser.add_argument('--return_path', default='/csimpson/polaris/fusion_return/', help=f'Path where files are returned on source machine')
+    parser.add_argument('--return_path', default='/home/simpsonc/fusion_return/', help=f'Path where files are returned on source machine')
     parser.add_argument('--label', default='transfer-fusion-run', help=f'Flow label')
     parser.add_argument('--tags', default={}, help=f'Flow label')
     parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings.keys())
