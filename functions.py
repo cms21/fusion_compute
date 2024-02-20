@@ -136,6 +136,8 @@ def arg_parse():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test', default=False, action='store_true', help=f'Test Function')
     parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings.keys())
+    parser.add_argument('--function', default='all', help=f'Function to register', choices=[ionorb_wrapper.__name__,make_plots.__name__,heatmapping.__name__])
+    
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -167,5 +169,7 @@ if __name__ == '__main__':
     else:
         print("Registering functions")
         functions = [ionorb_wrapper,make_plots,heatmapping,make_input_scripts]
+
         for function in functions:
-            register_function(function)
+            if args.function == "all" or args.function == function.__name__:
+                register_function(function)
