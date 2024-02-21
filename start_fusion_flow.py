@@ -1,10 +1,11 @@
-from globus_automate_client import create_flows_client
+from utils import get_specific_flow_client
 import globus_compute_sdk
 from dotenv import load_dotenv
 import os, json
 import argparse
 
 load_dotenv(dotenv_path="./fusion.env")
+client_id = os.getenv("CLIENT_ID")
 flow_id = os.getenv("GLOBUS_FLOW_ID")
 
 machine_settings = {"polaris":{"transfer_endpoint": os.getenv("GLOBUS_ALCF_EAGLE"),
@@ -20,13 +21,14 @@ machine_settings = {"polaris":{"transfer_endpoint": os.getenv("GLOBUS_ALCF_EAGLE
                     "summit":{"transfer_endpoint": os.getenv("GLOBUS_OLCF"),
                               "compute_endpoint": os.getenv("GLOBUS_COMPUTE_SUMMIT_ENDPOINT"),
                               "bin_path": "/ccs/home/simpson/bin/",
-                               "scratch_path": "/gpfs/alpine/gen008/scratch/simpson/", ### User needs to change this!
+                               "scratch_path": "/gpfs/alpine2/gen008/scratch/simpson/", ### User needs to change this!
                                "facility": "olcf"},
                     "omega":{"transfer_endpoint": os.getenv("GLOBUS_D3D"),
                               "compute_endpoint": os.getenv("GLOBUS_COMPUTE_OMEGA_LOCAL_ENDPOINT"),
                               "bin_path": "/fusion/projects/codes/ionorb/bin",
                                "scratch_path": "/home/simpsonc", ### User needs to change this!
                                "facility": "d3d"}}
+
 
 def endpoint_active(compute_endpoint_id):
     gc = globus_compute_sdk.Client()
@@ -38,21 +40,16 @@ def endpoint_active(compute_endpoint_id):
         return False
     else:
         return True
-    
-def check_username(machine,verbose=False):
-    facility = machine_settings[machine]["facility"]
-    ret=os.popen(f"globus whoami --linked-identities | grep {facility}").read()
-    if verbose:
-        print(f"check username for {machine}")
-        print(f"{ret}")
-    if facility in ret:
-        return ret.split("@")[0]
-    else:
-        print(f"WARNING: Auth not yet established for {machine}")
-        return None
-    
-def run_flow(input_json, source_path, destination_path, return_path, machine="polaris", destination_relpath=None, dynamic=True, label=None, tags=None, flow_client=None,verbose=False):
-    
+
+  
+def run_flow(input_json, source_path, destination_path, return_path, 
+                    machine="polaris", 
+                    destination_relpath=None, 
+                    dynamic=True, 
+                    label=None, tags=[], 
+                    flow_client=None,
+                    verbose=False):
+
     endpoint_status = endpoint_active(machine_settings[machine]["compute_endpoint"])
     if dynamic and endpoint_status == False and destination_relpath != None:
         for alternate_machine in machine_settings.keys():
@@ -64,19 +61,35 @@ def run_flow(input_json, source_path, destination_path, return_path, machine="po
                 machine = alternate_machine
                 break
     
-    flow_input = set_flow_input(machine, input_json,source_path,destination_path,return_path,destination_relpath=destination_relpath,verbose=verbose)
+    flow_input = set_flow_input(machine, 
+                                input_json,
+                                source_path,
+                                destination_path,
+                                return_path,
+                                destination_relpath=destination_relpath,
+                                verbose=verbose)
     if endpoint_status:
+
         if flow_client is None:
-            flow_client = create_flows_client()
-        flow = flow_client.get_flow(flow_id)
-        flow_scope = flow['globus_auth_scope']
-        flow_action = flow_client.run_flow(flow_id, flow_scope, flow_input, label=label, tags=tags)
+            #collection_ids = [flow_input["input"]["source"]["id"], flow_input["input"]["destination"]["id"]]
+            collection_ids = [flow_input["input"]["destination"]["id"]]
+
+            flow_client = get_specific_flow_client(flow_id=flow_id,
+                                                   client_id=client_id,
+                                                   collection_ids=collection_ids)
+
+        label = machine+'_'+label
+        tags+=[machine]
+        flow_action = flow_client.run_flow(body=flow_input,
+                                            label=label,
+                                            tags=tags,)
         if verbose:
             print(f"Flow ID: {flow_action['flow_id']} \nFlow title: {flow_action['flow_title']} \nRun ID: {flow_action['run_id']} \nRun label: {flow_action['label']} \nRun owner: {flow_action['run_owner']}")
         print(f"run id: {flow_action['run_id']}")
         return flow_action
     else:
         return None
+
 
 def set_flow_input(machine, input_json,source_path,destination_path,return_path,destination_relpath=None, verbose=False):
 
@@ -94,19 +107,11 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
     # Machine specific special cases
     if machine == "polaris":
         run_directory = os.path.join("/eagle","/".join(str(destination_path).split("/")[1:]))    
-    # if machine == "perlmutter" and destination_relpath != None:
-    #     username = check_username(machine,verbose=verbose)
-    #     if verbose:
-    #         print(f"username: {username}")
-    #     if username != None:
-    #         destination_path = os.path.join(settings["scratch_path"],username[0],username,destination_relpath)
-    #         run_directory = destination_path
-    #     else:
-    #         raise Exception("Need to establish username for nersc to use destination_relpath; try running without destination_relpath first to establish auth")
     
     # Set flow inputs
     flow_input["input"]["inputs_endpoint_id"] = machine_settings["omega"]["compute_endpoint"]
-    flow_input["input"]["inputs_function_kwargs"] = {"run_directory": source_path}
+    flow_input["input"]["inputs_function_kwargs"] = {"run_directory": source_path, 
+                                                     "nparts":1000}
     flow_input["input"]["destination"]["id"] = settings["transfer_endpoint"]
     flow_input["input"]["compute_endpoint_id"] = settings["compute_endpoint"]
     flow_input["input"]["compute_function_kwargs"] = {"run_directory": run_directory}
@@ -128,11 +133,11 @@ def arg_parse():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--destination_path', default='/IRIBeta/fusion/test_runs/test/', help=f'Destination path for transfer file(s)')
-    parser.add_argument('--source_path', default='/csimpson/polaris/fusion/', help=f'Path of file(s) to transfer')
+    parser.add_argument('--source_path', default='/home/simpsonc/fusion', help=f'Path of file(s) to transfer')
     parser.add_argument('--destination_relpath', default=None, help=f'Destination path for transfer file(s) relative to base path')
-    parser.add_argument('--return_path', default='/csimpson/polaris/fusion_return/', help=f'Path where files are returned on source machine')
-    parser.add_argument('--label', default='transfer-fusion-run', help=f'Flow label')
-    parser.add_argument('--tags', default={}, help=f'Flow label')
+    parser.add_argument('--return_path', default='/home/simpsonc/fusion_return/', help=f'Path where files are returned on source machine')
+    parser.add_argument('--label', default='ionorb-run', help=f'Flow label')
+    parser.add_argument('--tags', nargs="*", help=f'Flow tags')
     parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings.keys())
     parser.add_argument('--input_json', help='Path to the flow input .json file',
                         default="./input.json")
@@ -151,12 +156,15 @@ if __name__ == '__main__':
         print(f"Path on destination endpoint is {args.destination_path}")
         print(f"Path on local machine to input.json is {args.input_json}")
         print(f"Flow label {args.label}")
-    run_flow(args.input_json, 
+    run = run_flow(args.input_json, 
              args.source_path, 
              args.destination_path, 
              args.return_path, 
              machine=args.machine, 
              label=args.label,
+             tags=args.tags,
              destination_relpath=args.destination_relpath,
              dynamic=args.dynamic,
-            verbose=args.verbose)
+             verbose=args.verbose)
+    if args.verbose:
+        print(run)

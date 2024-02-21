@@ -84,6 +84,9 @@ def make_input_scripts(run_directory, shot=164869, stime=3005, efitnum="EFIT01",
     import os, time, subprocess, glob
 
     start = time.time()
+
+    if not os.path.exists(run_directory):
+        os.makedirs(run_directory)
     os.chdir(run_directory)
 
     # Create B field file
@@ -136,6 +139,11 @@ def arg_parse():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test', default=False, action='store_true', help=f'Test Function')
     parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings.keys())
+    parser.add_argument('--function', default='all', help=f'Function to register', choices=[ionorb_wrapper.__name__,
+                                                                                            make_plots.__name__,
+                                                                                            heatmapping.__name__,
+                                                                                            make_input_scripts.__name__])
+    
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -149,14 +157,20 @@ if __name__ == '__main__':
             settings['scratch_path'] = "/eagle"+settings['scratch_path']
 
         print(f"Testing functions on {machine}")
-        functions = [hello_world, make_input_scripts]#, ionorb_wrapper, heatmapping]
+
+        if machine == "omega":
+            # These functions only run at D3D
+            functions = [hello_world, make_input_scripts]
+        else:
+            # These functions are setup on ASCR machines
+            functions = [hello_world, ionorb_wrapper, heatmapping]
         for function in functions:
             print(function) 
             gce = globus_compute_sdk.Executor(endpoint_id=settings["compute_endpoint"])
 
             params = []
             if function == ionorb_wrapper or function == make_input_scripts:
-                params= [os.path.join(settings["scratch_path"],"test_runs/test")]
+                params= [os.path.join(settings["scratch_path"],"test_runs/test/1")]
             elif function == heatmapping:
                 params= [settings["bin_path"], 
                          os.path.join(settings["scratch_path"],"test_runs/test")]
@@ -167,5 +181,7 @@ if __name__ == '__main__':
     else:
         print("Registering functions")
         functions = [ionorb_wrapper,make_plots,heatmapping,make_input_scripts]
+
         for function in functions:
-            register_function(function)
+            if args.function == "all" or args.function == function.__name__:
+                register_function(function)
