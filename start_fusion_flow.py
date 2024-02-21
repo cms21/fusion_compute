@@ -78,6 +78,8 @@ def run_flow(input_json, source_path, destination_path, return_path,
                                                    client_id=client_id,
                                                    collection_ids=collection_ids)
 
+        label = machine+'_'+label
+        tags+=[machine]
         flow_action = flow_client.run_flow(body=flow_input,
                                             label=label,
                                             tags=tags,)
@@ -108,7 +110,8 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
     
     # Set flow inputs
     flow_input["input"]["inputs_endpoint_id"] = machine_settings["omega"]["compute_endpoint"]
-    flow_input["input"]["inputs_function_kwargs"] = {"run_directory": source_path}
+    flow_input["input"]["inputs_function_kwargs"] = {"run_directory": source_path, 
+                                                     "nparts":1000}
     flow_input["input"]["destination"]["id"] = settings["transfer_endpoint"]
     flow_input["input"]["compute_endpoint_id"] = settings["compute_endpoint"]
     flow_input["input"]["compute_function_kwargs"] = {"run_directory": run_directory}
@@ -133,8 +136,8 @@ def arg_parse():
     parser.add_argument('--source_path', default='/home/simpsonc/fusion', help=f'Path of file(s) to transfer')
     parser.add_argument('--destination_relpath', default=None, help=f'Destination path for transfer file(s) relative to base path')
     parser.add_argument('--return_path', default='/home/simpsonc/fusion_return/', help=f'Path where files are returned on source machine')
-    parser.add_argument('--label', default='transfer-fusion-run', help=f'Flow label')
-    parser.add_argument('--tags', default={}, help=f'Flow label')
+    parser.add_argument('--label', default='ionorb-run', help=f'Flow label')
+    parser.add_argument('--tags', nargs="*", help=f'Flow tags')
     parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings.keys())
     parser.add_argument('--input_json', help='Path to the flow input .json file',
                         default="./input.json")
@@ -159,8 +162,9 @@ if __name__ == '__main__':
              args.return_path, 
              machine=args.machine, 
              label=args.label,
+             tags=args.tags,
              destination_relpath=args.destination_relpath,
              dynamic=args.dynamic,
-            verbose=args.verbose)
+             verbose=args.verbose)
     if args.verbose:
         print(run)

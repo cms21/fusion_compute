@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# Ensure these modules are loaded before running this script:
-# module load conda/py3.9-spyder
-# conda activate fusion
-# module load ionorbgpu/birth
-
 # CMS: Add calls to run IDL scripts, something like this?
 # ionorb_createB 164869 3005 EFIT01
 # ionorb_create_birth 164869 3005 EFIT01 1 1 FULL 1000
@@ -34,14 +29,8 @@ if [ $# -gt 0 ]; then
 	done
 fi
 
-if [ "$DYNAMIC" == "" ]; then
-	echo Running on $MACHINE
-else
-	echo Running in dynamic mode, first try machine $MACHINE
-fi
-
 python start_fusion_flow.py --machine $MACHINE $DYNAMIC \
 							--source_path $SRC_PATH \
 							--destination_relpath $DEST_RELPATH \
 							--return_path $RET_PATH \
-							--label "iris_to_"$MACHINE$DYNAMIC"_"$TIME_NOW
+							--tags $TIME_NOW
