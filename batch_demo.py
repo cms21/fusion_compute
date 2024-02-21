@@ -1,10 +1,10 @@
-# from globus_automate_client import create_flows_client
-from globus_cli.login_manager import LoginManager
+from utils import get_specific_flow_client
 from start_fusion_flow import run_flow, endpoint_active, set_flow_input
 import time, uuid, os
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path="./fusion.env")
+client_id = os.getenv("CLIENT_ID")
 flow_id = os.getenv("GLOBUS_FLOW_ID")
 
 if __name__ == '__main__':
@@ -27,12 +27,11 @@ if __name__ == '__main__':
 
     if endpoint_active(flow_input["input"]["compute_endpoint_id"]):
     
-        login_manager = LoginManager()
-        fc = login_manager.get_specific_flow_client(flow_id)
+        fc = get_specific_flow_client(flow_id=flow_id, client_id=client_id)
         flow_actions = []
         for i in range(nruns):
             label = label_base+f"-{i+1}/{nruns}"
-            source_path = "/home/simpsonc/fusion"
+            source_path = f"/home/simpsonc/fusion/batch/{test_tag}/{i}"
             destination_relpath = f"test_runs/batch_test/{test_tag}/{i}"
             return_path = f"/home/simpsonc/fusion_return/{test_tag}/{i}"
             run_flow(json_input_path, 
