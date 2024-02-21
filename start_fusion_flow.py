@@ -22,7 +22,13 @@ machine_settings = {"polaris":{"transfer_endpoint": os.getenv("GLOBUS_ALCF_EAGLE
                               "compute_endpoint": os.getenv("GLOBUS_COMPUTE_SUMMIT_ENDPOINT"),
                               "bin_path": "/ccs/home/simpson/bin/",
                                "scratch_path": "/gpfs/alpine2/gen008/scratch/simpson/", ### User needs to change this!
-                               "facility": "olcf"}}
+                               "facility": "olcf"},
+                    "omega":{"transfer_endpoint": os.getenv("GLOBUS_D3D"),
+                              "compute_endpoint": os.getenv("GLOBUS_COMPUTE_OMEGA_LOCAL_ENDPOINT"),
+                              "bin_path": "/fusion/projects/codes/ionorb/bin",
+                               "scratch_path": "/home/simpsonc", ### User needs to change this!
+                               "facility": "d3d"}}
+
 
 def endpoint_active(compute_endpoint_id):
     gc = globus_compute_sdk.Client()
@@ -72,10 +78,14 @@ def run_flow(input_json, source_path, destination_path, return_path,
                                                    client_id=client_id,
                                                    collection_ids=collection_ids)
 
-        print("flow client",flow_client)
+        label = machine+'_'+label
+        tags+=[machine]
         flow_action = flow_client.run_flow(body=flow_input,
                                             label=label,
-                                            tags=tags,)      
+                                            tags=tags,)
+        if verbose:
+            print(f"Flow ID: {flow_action['flow_id']} \nFlow title: {flow_action['flow_title']} \nRun ID: {flow_action['run_id']} \nRun label: {flow_action['label']} \nRun owner: {flow_action['run_owner']}")
+        print(f"run id: {flow_action['run_id']}")
         return flow_action
     else:
         return None
@@ -99,6 +109,9 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
         run_directory = os.path.join("/eagle","/".join(str(destination_path).split("/")[1:]))    
     
     # Set flow inputs
+    flow_input["input"]["inputs_endpoint_id"] = machine_settings["omega"]["compute_endpoint"]
+    flow_input["input"]["inputs_function_kwargs"] = {"run_directory": source_path, 
+                                                     "nparts":1000}
     flow_input["input"]["destination"]["id"] = settings["transfer_endpoint"]
     flow_input["input"]["compute_endpoint_id"] = settings["compute_endpoint"]
     flow_input["input"]["compute_function_kwargs"] = {"run_directory": run_directory}
@@ -123,8 +136,8 @@ def arg_parse():
     parser.add_argument('--source_path', default='/home/simpsonc/fusion', help=f'Path of file(s) to transfer')
     parser.add_argument('--destination_relpath', default=None, help=f'Destination path for transfer file(s) relative to base path')
     parser.add_argument('--return_path', default='/home/simpsonc/fusion_return/', help=f'Path where files are returned on source machine')
-    parser.add_argument('--label', default='transfer-fusion-run', help=f'Flow label')
-    parser.add_argument('--tags', default={}, help=f'Flow label')
+    parser.add_argument('--label', default='ionorb-run', help=f'Flow label')
+    parser.add_argument('--tags', nargs="*", help=f'Flow tags')
     parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings.keys())
     parser.add_argument('--input_json', help='Path to the flow input .json file',
                         default="./input.json")
@@ -149,8 +162,9 @@ if __name__ == '__main__':
              args.return_path, 
              machine=args.machine, 
              label=args.label,
+             tags=args.tags,
              destination_relpath=args.destination_relpath,
              dynamic=args.dynamic,
-            verbose=args.verbose)
+             verbose=args.verbose)
     if args.verbose:
         print(run)
