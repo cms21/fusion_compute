@@ -58,10 +58,14 @@ def get_authorizer(client_id, flow_id=None, collection_ids=None):
 
      # try to load the tokens from the file, possibly returning None
     if MY_FILE_ADAPTER.file_exists():# and not collection_ids:
-        tokens = MY_FILE_ADAPTER.get_token_data(flow_id)
+      
+        if flow_id:
+            tokens = MY_FILE_ADAPTER.get_token_data(flow_id)
+        else:
+            tokens = MY_FILE_ADAPTER.get_token_data("flows.globus.org")
     else:
         tokens = None
-
+    
     if tokens is None:
         # do a login flow, getting back initial tokens
         response = do_login_flow(all_scopes, native_client)

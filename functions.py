@@ -6,11 +6,18 @@ from start_fusion_flow import machine_settings
 
 load_dotenv(dotenv_path="./fusion.env")
 
-def ionorb_wrapper(run_directory, config_path="ionorb_stl2d_boris.config", outfile="out.hits.els.txt"):
-    import subprocess, os, time, shutil
+def ionorb_wrapper(run_directory, bin_path, config_path="ionorb_stl2d_boris.config", outfile="out.hits.els.txt"):
+    import subprocess, os, time, shutil, glob
 
     start = time.time()
     os.chdir(run_directory)
+
+    if len(glob.glob("*.stl")+glob.glob("*.STL")) == 0:
+        stl_files = glob.glob(os.path.join(bin_path,"*.stl"))+glob.glob(os.path.join(bin_path,"*.STL"))
+        for stl_file in stl_files:
+            stl_file_name = stl_file.split("/")[-1]
+            os.symlink(stl_file,os.path.join(run_directory,stl_file_name))
+
     command = f"ionorb_stl_boris2d {config_path}"
     res = subprocess.run(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     end = time.time()
@@ -108,7 +115,7 @@ def make_input_scripts(run_directory, shot=164869, stime=3005, efitnum="EFIT01",
     # Create config file
     command = f"/home/simpsonc/ionorbgpu/v2/tools/ionorb_generate_config"
     res = subprocess.run(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if res.returncode != 0 or len(glob.glob("*.config")) == 0 or len(glob.glob("*.stl")) == 0:
+    if res.returncode != 0 or len(glob.glob("*.config")) == 0: #or len(glob.glob("*.stl")) == 0:
         end = time.time()
         runtime = end - start
         raise Exception(f"config failed: {res.returncode} {len(glob.glob('*.config'))} {len(glob.glob('*.stl'))} stdout='{res.stdout.decode('utf-8')}' stderr='{res.stderr.decode('utf-8')}' runtime={runtime} command={command}")
@@ -169,7 +176,10 @@ if __name__ == '__main__':
             gce = globus_compute_sdk.Executor(endpoint_id=settings["compute_endpoint"])
 
             params = []
-            if function == ionorb_wrapper or function == make_input_scripts:
+            if function == ionorb_wrapper:
+                params= ["/eagle/IRIBeta/csimpson/fusion_ionorb_slice_tests/s164869",
+                         "/eagle/IRIBeta/fusion/bin"]
+            elif function == make_input_scripts:
                 params= [os.path.join(settings["scratch_path"],"test_runs/test/1")]
             elif function == heatmapping:
                 params= [settings["bin_path"], 
@@ -180,7 +190,7 @@ if __name__ == '__main__':
             
     else:
         print("Registering functions")
-        functions = [ionorb_wrapper,make_plots,heatmapping,make_input_scripts]
+        functions = [make_input_scripts]#,make_plots,heatmapping,make_input_scripts]
 
         for function in functions:
             if args.function == "all" or args.function == function.__name__:

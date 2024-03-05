@@ -43,10 +43,11 @@ def endpoint_active(compute_endpoint_id):
 
   
 def run_flow(input_json, source_path, destination_path, return_path, 
+                    inputs_function_kwargs={},
                     machine="polaris", 
                     destination_relpath=None, 
                     dynamic=True, 
-                    label=None, tags=[], 
+                    label="ionorb-run", tags=[], 
                     flow_client=None,
                     verbose=False):
 
@@ -66,6 +67,7 @@ def run_flow(input_json, source_path, destination_path, return_path,
                                 source_path,
                                 destination_path,
                                 return_path,
+                                inputs_function_kwargs=inputs_function_kwargs,
                                 destination_relpath=destination_relpath,
                                 verbose=verbose)
     if endpoint_status:
@@ -77,21 +79,22 @@ def run_flow(input_json, source_path, destination_path, return_path,
             flow_client = get_specific_flow_client(flow_id=flow_id,
                                                    client_id=client_id,
                                                    collection_ids=collection_ids)
-
         label = machine+'_'+label
+        if tags == None: tags = []
         tags+=[machine]
+        
         flow_action = flow_client.run_flow(body=flow_input,
                                             label=label,
                                             tags=tags,)
         if verbose:
             print(f"Flow ID: {flow_action['flow_id']} \nFlow title: {flow_action['flow_title']} \nRun ID: {flow_action['run_id']} \nRun label: {flow_action['label']} \nRun owner: {flow_action['run_owner']}")
         print(f"run id: {flow_action['run_id']}")
-        return flow_action
+        return flow_action['run_id']
     else:
         return None
 
 
-def set_flow_input(machine, input_json,source_path,destination_path,return_path,destination_relpath=None, verbose=False):
+def set_flow_input(machine, input_json,source_path,destination_path,return_path, inputs_function_kwargs={}, destination_relpath=None, verbose=False):
 
     flow_input = json.load(open(input_json))
 
@@ -111,10 +114,11 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
     # Set flow inputs
     flow_input["input"]["inputs_endpoint_id"] = machine_settings["omega"]["compute_endpoint"]
     flow_input["input"]["inputs_function_kwargs"] = {"run_directory": source_path, 
-                                                     "nparts":1000}
+                                                     **inputs_function_kwargs}
     flow_input["input"]["destination"]["id"] = settings["transfer_endpoint"]
     flow_input["input"]["compute_endpoint_id"] = settings["compute_endpoint"]
-    flow_input["input"]["compute_function_kwargs"] = {"run_directory": run_directory}
+    flow_input["input"]["compute_function_kwargs"] = {"run_directory": run_directory, 
+                                                      "bin_path": settings["bin_path"]}
     flow_input["input"]["plot_function_kwargs"] = {"run_directory": run_directory, 
                                                    "python_path": settings["bin_path"]}
     flow_input["input"]["source"]["outpath"] = return_path
@@ -159,7 +163,8 @@ if __name__ == '__main__':
     run = run_flow(args.input_json, 
              args.source_path, 
              args.destination_path, 
-             args.return_path, 
+             args.return_path,
+             inputs_function_kwargs={}, 
              machine=args.machine, 
              label=args.label,
              tags=args.tags,

@@ -186,7 +186,7 @@ inputs_flow_definition = {
                     "function.$": "$.input.inputs_function_id",
                     "kwargs.$": "$.input.inputs_function_kwargs"
                 },
-                "ResultPath": "$.InputsOutput",
+                "ResultPath": "$.MakeInputsOutput",
                 "WaitTime": 300,
                 "Next": "Transfer_In"
             },

@@ -65,7 +65,7 @@ if __name__ == '__main__':
     # Add collections to flow scope
     # D3D endpoint not included here because it is a personal collection currently
     if reset_scopes:
-
+        print("Resetting scopes")
         if os.path.exists("~/.sdk-manage-flow.json"):
             os.remove("~/.sdk-manage-flow.json")
         collection_ids = [eid for eid in [os.getenv("GLOBUS_ALCF_EAGLE"),
