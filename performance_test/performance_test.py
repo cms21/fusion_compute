@@ -85,7 +85,6 @@ def run_and_wait_for_workers(inputs_batch,
             inputs_function_kwargs = inputs_batch[input_key]
             instance += 1
         
-
         run_id = run_perf_instance(machine=machine,
                                 inputs_function_kwargs=inputs_function_kwargs,
                                 source_path=f'/home/simpsonc/fusion/{test_label}/{machine}/{input_key}/{i}',
