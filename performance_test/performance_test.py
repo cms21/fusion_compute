@@ -106,7 +106,7 @@ def run_and_wait_for_workers(inputs_batch,
                 status_string+=f"{sc} run(s) {rs}, "
             status_string += f"{n_workers} workers"
             time.sleep(10)
-
+            print(status_string)
             for i in range(len(batch_runs)):
                 batch_status[i] = fc.get_run(batch_runs[i])["status"]
             n_running = len([status for status in batch_status if status in ["ACTIVE","INACTIVE"]])
@@ -118,7 +118,7 @@ def run_and_wait_for_workers(inputs_batch,
         status_string+=f"{sc} run(s) {rs} "
         if rs == "FAILED":
             n_failed = sc
-    
+    print(status_string)
     return batch_runs
 
 def activate_endpoint(machine="polaris"):
@@ -222,10 +222,16 @@ def assemble_ionorb_input_kwargs(testfile=None,
         print(f"Read inputs from file")
         return_kwargs_list = []
         with open(testfile,"r") as f:
-            shots,time0s,time1s,steps = np.genfromtxt(f,unpack=True,dtype=int,max_rows=16)
-            for shot,time0,time1,step in zip(shots,time0s,time1s,steps):
+            #shots,time0s,time1s,steps = np.genfromtxt(f,unpack=True,dtype=int)
+            lines = f.readlines()
+            #for shot,time0,time1,step in zip(shots,time0s,time1s,steps):
+            for line in lines:
+                if line[0] == "#":
+                    continue
+                shot,time0,time1,step = line.split()
                 time = int(time0)
-                shot = int(shot)
+                time1 = int(time1)
+                step = int(step)
                 stimes = []
                 while time <= time1:
                     stimes.append(time)

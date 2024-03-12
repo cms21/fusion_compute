@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from fusion_compute import ENV_PATH
 import os
 import argparse
+import json
 
 load_dotenv(dotenv_path=ENV_PATH)
 client_id = os.getenv("CLIENT_ID")
@@ -67,10 +68,8 @@ def run_flow(source_path,
         label = machine+'_'+label
         if tags == None: tags = []
         tags+=[machine]
-
-        print(flow_input)
         
-        flow_action = flow_client.run_flow(body=flow_input,
+        flow_action = flow_client.run_flow(body=json.dumps(flow_input),
                                             label=label,
                                             tags=tags,)
         if verbose:
