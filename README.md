@@ -1,20 +1,62 @@
 # fusion_compute
-Scripts to deploy fusion application on ALCF systems with Globus Flows
+This repository contains scripts to deploy the Ionorb workflow for DIII-D on machines at ALCF and NERSC.  This implementation uses Globus Flows.  It requires the user to setup the various Globus transfer and compute endpoints under the user's account.  Future work will make use of a DIII-D institutional transfer endpoint and compute endpoints run by service and robot accounts at ALCF and NERSC.  There is also planned development to create inputs using Toksys and FORTRAN code.
 
-## Setup on Polaris/Perlmutter
-First login to Polaris and/or Perlmutter and do the following things:
-### 1. Load conda module
+This repositiory will allow a user to trigger a Globus flow that will run Ionorb on Polaris or Perlmutter from the user's local machine.  The steps that each flow run does are:
 
-On Polaris:
+#### 1. Create input files for Ionorb on the machine Omega at DIII-D
+#### 2. Transfer input files to either Polaris or Perlmutter
+#### 3. Run Ionorb on Polaris or Perlmutter (depending on where the input data were sent)
+#### 4. Run a postprocessing analysis script that uses the outputs of Ionorb to compute the peak power deposited on the DIII-D inner wall
+#### 5. Transfer Ionorb results back to Omega at DIII-D
+
+## 1. Setup on Omega at DIII-D
+
+### 0. Create Globus Transfer endpoint
+NOTE!!! Once DIII-D has installed its planned institutional Globus transfer endpoint, the user should use that endpoint and skip this step.
+
+Login to Omega.
+
+### 1. Load the globus module and create a Globus Compute endpoint
+
+First clone this repo:
+
+```bash
+git clone
+```
+
+Load the globus module and configure the compute endpoint:
+
+```bash
+module load globus
+cd fusion_compute/endpoint_configs
+globus-compute-endpoint configure --endpoint-config omega_short_config.yaml omega_short
+globus-compute-endpoint start omega_short
+```
+
+If you need to make any adjustments to your endpoint configuration, you can find the 
+
+## 2. Setup on Polaris
+
+### Clone this repo
+
+```bash
+git clone
+```
+
+
+
+### Load conda module installed under the IRIBeta/fusion space
+
 ```bash
 module load conda
 conda activate /eagle/IRIBeta/fusion/fusion_env
 ```
 
-### 2. Create a Globus Endpoint
+### Create a Globus Endpoint
 Use the provided `<MACHINE>_config.yml_template` as a model to configure your endpoint in the [endpoint_configs](endpoint_configs) directory. Edit it to replace your project name, environment name, etc.  Then do:
 
 ```bash
+cd fusion_compute/endpoint_configs
 globus-compute-endpoint configure --endpoint-config config.yml_template <YOUR_ENDPOINT_NAME>
 globus-compute-endpoint start <YOUR_ENDPOINT_NAME>
 globus-compute-endpoint list
@@ -22,7 +64,12 @@ globus-compute-endpoint list
 
 Copy the endpoint ID for the next step.
 
-## Setup on Iris
+## 3. Setup on Perlmutter
+
+
+## 4. Setup on Local Machine
+
+
 ### 1. Clone this repo
 Clone this repo. Paste your compute enpoint IDs for Polaris and/or Perlmutter into `fusion.env_template` and copy it to `fusion.env`.  Also paste in the source endpoint id into the file.
 

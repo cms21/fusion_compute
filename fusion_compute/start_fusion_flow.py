@@ -1,34 +1,15 @@
-from utils import get_specific_flow_client
+from fusion_compute.utils import get_specific_flow_client
+from fusion_compute.machine_settings import machine_settings
+from fusion_compute.flows import fusion_input
 import globus_compute_sdk
 from dotenv import load_dotenv
-import os, json
+from fusion_compute import ENV_PATH
+import os
 import argparse
 
-load_dotenv(dotenv_path="./fusion.env")
+load_dotenv(dotenv_path=ENV_PATH)
 client_id = os.getenv("CLIENT_ID")
 flow_id = os.getenv("GLOBUS_FLOW_ID")
-
-machine_settings = {"polaris":{"transfer_endpoint": os.getenv("GLOBUS_ALCF_EAGLE"),
-                                   "compute_endpoint": os.getenv("GLOBUS_COMPUTE_POLARIS_ENDPOINT"),
-                                   "bin_path": "/eagle/IRIBeta/fusion/bin",
-                                   "scratch_path": "/IRIBeta/fusion/",
-                                   "facility": "alcf"},
-                    "perlmutter":{"transfer_endpoint": os.getenv("GLOBUS_NERSC_PERLMUTTER"),
-                                    "compute_endpoint": os.getenv("GLOBUS_COMPUTE_PERLMUTTER_ENDPOINT"),
-                                    "bin_path": "/global/common/software/m3739/perlmutter/ionorb/bin/",
-                                    "scratch_path": "/pscratch/sd/c/csimpson", ### User needs to change this!
-                                    "facility": "nersc"},
-                    "summit":{"transfer_endpoint": os.getenv("GLOBUS_OLCF"),
-                              "compute_endpoint": os.getenv("GLOBUS_COMPUTE_SUMMIT_ENDPOINT"),
-                              "bin_path": "/ccs/home/simpson/bin/",
-                               "scratch_path": "/gpfs/alpine2/gen008/scratch/simpson/", ### User needs to change this!
-                               "facility": "olcf"},
-                    "omega":{"transfer_endpoint": os.getenv("GLOBUS_D3D"),
-                              "compute_endpoint": os.getenv("GLOBUS_COMPUTE_OMEGA_LOCAL_ENDPOINT"),
-                              "bin_path": "/fusion/projects/codes/ionorb/bin",
-                               "scratch_path": "/home/simpsonc", ### User needs to change this!
-                               "facility": "d3d"}}
-
 
 def endpoint_active(compute_endpoint_id):
     gc = globus_compute_sdk.Client()
@@ -41,15 +22,21 @@ def endpoint_active(compute_endpoint_id):
     else:
         return True
 
-  
-def run_flow(input_json, source_path, destination_path, return_path, 
-                    inputs_function_kwargs={},
-                    machine="polaris", 
-                    destination_relpath=None, 
-                    dynamic=True, 
-                    label="ionorb-run", tags=[], 
-                    flow_client=None,
-                    verbose=False):
+
+def run_flow(source_path, 
+            return_path,
+            destination_path = None,
+            destination_relpath=None,
+            inputs_function_kwargs={},
+            machine="polaris", 
+            dynamic=True, 
+            label="ionorb-run", 
+            tags=[], 
+            flow_client=None,
+            verbose=False):
+
+    if destination_path is None and destination_relpath is None:
+        raise Exception("No destination path set")
 
     endpoint_status = endpoint_active(machine_settings[machine]["compute_endpoint"])
     if dynamic and endpoint_status == False and destination_relpath != None:
@@ -63,17 +50,15 @@ def run_flow(input_json, source_path, destination_path, return_path,
                 break
     
     flow_input = set_flow_input(machine, 
-                                input_json,
                                 source_path,
-                                destination_path,
                                 return_path,
-                                inputs_function_kwargs=inputs_function_kwargs,
+                                destination_path=destination_path,
                                 destination_relpath=destination_relpath,
+                                inputs_function_kwargs=inputs_function_kwargs,
                                 verbose=verbose)
     if endpoint_status:
 
         if flow_client is None:
-            #collection_ids = [flow_input["input"]["source"]["id"], flow_input["input"]["destination"]["id"]]
             collection_ids = [flow_input["input"]["destination"]["id"]]
 
             flow_client = get_specific_flow_client(flow_id=flow_id,
@@ -94,9 +79,15 @@ def run_flow(input_json, source_path, destination_path, return_path,
         return None
 
 
-def set_flow_input(machine, input_json,source_path,destination_path,return_path, inputs_function_kwargs={}, destination_relpath=None, verbose=False):
+def set_flow_input(machine,
+                   source_path,
+                   return_path, 
+                   destination_path=None, 
+                   destination_relpath=None, 
+                   inputs_function_kwargs={}, 
+                   verbose=False):
 
-    flow_input = json.load(open(input_json))
+    flow_input = fusion_input
 
     settings = machine_settings[machine]
 
@@ -111,7 +102,7 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
     if machine == "polaris":
         run_directory = os.path.join("/eagle","/".join(str(destination_path).split("/")[1:]))    
     
-    # Set flow inputs
+    # Set machine-specific flow inputs
     flow_input["input"]["inputs_endpoint_id"] = machine_settings["omega"]["compute_endpoint"]
     flow_input["input"]["inputs_function_kwargs"] = {"run_directory": source_path, 
                                                      **inputs_function_kwargs}
@@ -125,6 +116,12 @@ def set_flow_input(machine, input_json,source_path,destination_path,return_path,
     flow_input["input"]["source"]["path"] = source_path
     flow_input["input"]["destination"]["outpath"] = os.path.join(str(destination_path),"outputs/")
     flow_input["input"]["destination"]["path"] = destination_path
+
+    # Set non-machine-specific flow inputs
+    flow_input["input"]["compute_function_id"] = os.getenv("IONORB_FUNCTION_ID")
+    flow_input["input"]["plot_function_id"] = os.getenv("HEATMAP_FUNCTION_ID")
+    flow_input["input"]["inputs_function_id"] = os.getenv("INPUTS_FUNCTION_ID")
+    flow_input["input"]["source"]["id"] = os.getenv("GLOBUS_TRANSFER_ENDPOINT_SRC")
     flow_input["input"]["recursive_tx"] = True
     
     if verbose:
@@ -162,13 +159,13 @@ if __name__ == '__main__':
         print(f"Flow label {args.label}")
     run = run_flow(args.input_json, 
              args.source_path, 
-             args.destination_path, 
              args.return_path,
+             destination_path=args.destination_path,
+             destination_relpath=args.destination_relpath,
              inputs_function_kwargs={}, 
              machine=args.machine, 
              label=args.label,
              tags=args.tags,
-             destination_relpath=args.destination_relpath,
              dynamic=args.dynamic,
              verbose=args.verbose)
     if args.verbose:

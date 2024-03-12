@@ -1,12 +1,13 @@
 from dotenv import load_dotenv
-from utils import get_flows_client
-from start_fusion_flow import machine_settings
+from fusion_compute import ENV_PATH
+from fusion_compute.utils import get_flows_client
+from fusion_compute.machine_settings import machine_settings
 import os
 from dateutil.parser import parse
 from matplotlib import pyplot as plt
 import numpy as np
 
-load_dotenv(dotenv_path="./fusion.env")
+load_dotenv(dotenv_path=ENV_PATH)
 client_id = os.getenv("CLIENT_ID")
 flow_id = os.getenv("GLOBUS_FLOW_ID")
 
@@ -58,6 +59,8 @@ def plot_vs_nparts(run_timings,yvalue_label="flow_run_time",yvalue_norm=None, yl
         ax.legend(loc=0)
         fig.tight_layout()
         fig.savefig(plotname,format="pdf")
+        print(f"Saving {plotname}")
+        plt.close(fig)
 
 def plot_actions_per_nparts(run_timings, actions = ["Make_Inputs", "Transfer_In", "IonOrb", "Postprocessing", "Transfer_Out"]):
 
@@ -81,19 +84,21 @@ def plot_actions_per_nparts(run_timings, actions = ["Make_Inputs", "Transfer_In"
 
     axes["flow"].legend(loc=0)
     fig.tight_layout()
-    plt.savefig("perf_actions_per_nparts.pdf",format="pdf")
-
+    filename = "perf_actions_per_nparts.pdf"
+    fig.savefig(filename,format="pdf")
+    print(f"Saving {filename}")
+    plt.close(fig)
     return
 
-def plot_actions(run_timings, actions = ["Make_Inputs", "Transfer_In", "IonOrb", "Postprocessing", "Transfer_Out"]):
+def plot_actions(run_timings, testing_machines = None, actions = ["Make_Inputs", "Transfer_In", "IonOrb", "Postprocessing", "Transfer_Out"]):
 
     fig = plt.figure()
 
     #fig, ax = plt.subplots()
 
-    #testing_machines = np.unique([run_timings[rt]["machine"] for rt in run_timings])
-    testing_machines = ["polaris","perlmutter"]
-
+    if testing_machines is None:
+        testing_machines = np.unique([run_timings[rt]["machine"] for rt in run_timings])
+    
     colors = {}
     c = 0
     for machine in testing_machines:
@@ -112,16 +117,20 @@ def plot_actions(run_timings, actions = ["Make_Inputs", "Transfer_In", "IonOrb",
         ax.set_xticklabels(actions)
         ax.legend(loc=0)
         ax.set_ylabel("Action Time (s)")
-    fig.savefig("perf_actions.pdf",format="pdf")
+    filename = "perf_actions.pdf"
+    fig.savefig(filename,format="pdf")
+    print(f"Saving {filename}")
+    plt.close(fig)
     return
 
-def plot_ionorb_timings(run_timings):
+def plot_ionorb_timings(run_timings,testing_machines=None):
 
     fig = plt.figure()
     #fig, ax = plt.subplots()
 
-    #testing_machines = np.unique([run_timings[rt]["machine"] for rt in run_timings])
-    testing_machines = ["polaris","perlmutter"]
+    if testing_machines is None:
+        testing_machines = np.unique([run_timings[rt]["machine"] for rt in run_timings])
+    
     colors = {}
 
     c = 0
@@ -134,30 +143,43 @@ def plot_ionorb_timings(run_timings):
     min_val = min(min(function_values),min(action_values))
     max_val = max(max(function_values),max(action_values))
 
-
+    ratios = [(run_timings[rt]["IonOrb"]-run_timings[rt]["ionorb_function_time"])*100./run_timings[rt]["ionorb_function_time"]
+                        for rt in run_timings]
+    min_rval = min(ratios)
+    max_rval = max(ratios)
+        
 
     for machine in testing_machines:
         colors[machine] = color_cycle[c]
-        ax = fig.add_subplot(2,1,c+1)
-        yvalues = [run_timings[rt]["ionorb_function_time"] 
-                   for rt in run_timings if run_timings[rt]["machine"] == machine]
-        xvalues = [run_timings[rt]["IonOrb"] 
-                   for rt in run_timings if run_timings[rt]["machine"] == machine]
-            
-        #ax.plot(xvalues,yvalues,'s',c=colors[machine],label=machine)
-        ax.hist(yvalues,histtype="step",color=colors[machine],ls='-',label=machine+"-function",range=(min_val,max_val),bins=20)
-        ax.hist(xvalues,histtype="step",color=colors[machine],ls='--',label=machine+"-action",range=(min_val,max_val),bins=20)
-            
-        if c == 0:
-            ax.set_title("Ionorb")
-        c+=1
-        ax.legend(loc=0)
-        ax.set_xlabel("Run Time (s)")
-        #ax.set_ylabel("Function Time (s)")
+        ax_values = fig.add_subplot(2,2,c+c+1)
+        print(ax_values)
+        function_values = [run_timings[rt]["ionorb_function_time"] 
+                            for rt in run_timings if run_timings[rt]["machine"] == machine]
+        action_values = [run_timings[rt]["IonOrb"] 
+                        for rt in run_timings if run_timings[rt]["machine"] == machine]
+        ratios = [run_timings[rt]["IonOrb"]/run_timings[rt]["ionorb_function_time"]
+                        for rt in run_timings if run_timings[rt]["machine"] == machine]
         
+        ax_values.hist(function_values,histtype="step",color=colors[machine],ls='-',label=machine+"-function",range=(min_val,max_val),bins=20)
+        ax_values.hist(action_values,histtype="step",color=colors[machine],ls='--',label=machine+"-action",range=(min_val,max_val),bins=20)
+        
+        ax_ratios = fig.add_subplot(2,2,c+c+2)
+        ax_ratios.hist(ratios,histtype="step",color=colors[machine],ls='--',label=machine,bins=20,range=(min_rval,max_rval))
+        
+        if c == 0:
+            ax_values.set_title("Ionorb")
+        
+        ax_values.legend(loc=0)
+        ax_values.set_xlabel("Run Time (s)")
+        ax_ratios.set_xlabel("Per cent difference in Run Time")
+        #ax.set_ylabel("Function Time (s)")
+        c+=1
 
-    fig.savefig("ionorb_timings.pdf",format="pdf")
-
+    fig.tight_layout()
+    filename = "ionorb_timings.pdf"
+    fig.savefig(filename,format="pdf")
+    plt.close(fig)
+    print(f"Saving {filename}")
     return
 
 
@@ -226,10 +248,9 @@ def return_run_list_timings(runs):
         timings = return_flow_times(run_id)
         if timings["status"] == "SUCCEEDED":
             run_timings[run_id] = timings
-    print(run_timings)
     return run_timings
 
-def make_plots(runs, type="all"):
+def make_plots(runs, type="all", testing_machines=None):
 
     print("Making Plots")
     run_timings = return_run_list_timings(runs)
@@ -239,8 +260,8 @@ def make_plots(runs, type="all"):
     plot_vs_nparts(run_timings,yvalue_norm="nparts",ylabel="Flow Run Time per Particle (s)")
     plot_actions_per_nparts(run_timings)
 
-    plot_actions(run_timings)
-    plot_ionorb_timings(run_timings)
+    plot_actions(run_timings,testing_machines=testing_machines)
+    plot_ionorb_timings(run_timings,testing_machines=testing_machines)
 
     return
 

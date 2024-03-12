@@ -29,7 +29,7 @@ if [ $# -gt 0 ]; then
 	done
 fi
 
-python start_fusion_flow.py --machine $MACHINE $DYNAMIC \
+python fusion_compute/start_fusion_flow.py --machine $MACHINE $DYNAMIC \
 							--source_path $SRC_PATH \
 							--destination_relpath $DEST_RELPATH \
 							--return_path $RET_PATH \

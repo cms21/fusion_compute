@@ -1,0 +1,21 @@
+engine:
+  max_workers: 8
+  prefetch_capacity: 0
+  provider:
+    init_blocks: 0
+    launcher:
+      overrides: '--mpi=pmi2'
+      type: SrunLauncher
+    max_blocks: 2
+    min_blocks: 0
+    nodes_per_block: 1
+    exclusive: False
+    partition: short
+    scheduler_options: '#SBATCH --cpus-per-task=8'
+    type: SlurmProvider
+    walltime: 00:10:00
+    worker_init: module unload python; module unload mdsplus; module use $HOME/css-omega-modules; module load adas; module load ep; module load mamba; mamba activate globus; export PATH=/fusion/projects/codes/ionorbgpu/bin:$PATH; export PATH=/fusion/projects/codes/ionorbgpu/tools:$PATH; export EP_DIR=/fusion/projects/toolbox/energetic_particles; export IONORB_DIR=/fusion/projects/codes/ionorbgpu; export IDL_PATH=$IDL_PATH:/fusion/projects/toolbox/energetic_particles/idl_lib; module load mdsplus
+  strategy:
+    max_idletime: 300
+    type: SimpleStrategy
+  type: GlobusComputeEngine
