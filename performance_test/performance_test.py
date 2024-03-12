@@ -1,11 +1,10 @@
-from dotenv import load_dotenv
 from fusion_compute import ENV_PATH
-import globus_compute_sdk
 from fusion_compute.utils import get_flows_client
-#from functions import hello_world
 from fusion_compute.machine_settings import machine_settings
 from fusion_compute.start_fusion_flow import run_flow
+import globus_compute_sdk
 from globus_compute_sdk.serialize import CombinedCode
+from dotenv import load_dotenv
 import os
 import time
 import shortuuid
@@ -121,15 +120,6 @@ def run_and_wait_for_workers(inputs_batch,
         if rs == "FAILED":
             n_failed = sc
     
-    # if retry_failed and n_failed > 0:
-    #     print(f"Retrying {n_failed} runs")
-    #     for run_id,status in zip(batch_runs,batch_status):
-    #         if status == "FAILED":
-    #             run_info = fc.get_run(run_id)
-
-    #     wait_perf_instance(inputs_function_kwargs, machine=machine,input_batch=input_batch,niter=n_failed,test_label=test_label)
-    
-    
     return batch_runs
 
 def activate_endpoint(machine="polaris"):
@@ -184,6 +174,33 @@ def make_sequential_test(inputs_batch, machines=["polaris","perlmutter"],niter=1
     
     return batch_runs
 
+# def assemble_ionorb_input_kwargs(testfile=None, 
+#                           shot=[164869], 
+#                           stime=[3005], 
+#                           efitnum=["EFIT01"], 
+#                           profdata=[1], 
+#                           beam_num=[1], 
+#                           energykev=["FULL"], 
+#                           nparts=[1000],):
+#     return_kwargs = {}
+#     if testfile == None:
+#         return_kwargs_list = _assemble_kwargs( 
+#                             shot=shot, 
+#                             stime=stime, 
+#                             efitnum=efitnum, 
+#                             profdata=profdata, 
+#                             beam_num=beam_num, 
+#                             energykev=energykev, 
+#                             nparts=nparts,)
+#     else:
+#         print(f"Read inputs from file")
+
+#     nkwargs = len(return_kwargs_list)
+#     for n in range(nkwargs):
+#         return_kwargs[str(n)] = return_kwargs_list[n]
+    
+#     return return_kwargs
+
 def assemble_ionorb_input_kwargs(testfile=None, 
                           shot=[164869], 
                           stime=[3005], 
@@ -204,13 +221,29 @@ def assemble_ionorb_input_kwargs(testfile=None,
                             nparts=nparts,)
     else:
         print(f"Read inputs from file")
-
+        return_kwargs_list = []
+        with open(testfile,"r") as f:
+            shots,time0s,time1s,steps = np.genfromtxt(f,unpack=True,dtype=int,max_rows=16)
+            for shot,time0,time1,step in zip(shots,time0s,time1s,steps):
+                time = int(time0)
+                shot = int(shot)
+                stimes = []
+                while time <= time1:
+                    stimes.append(time)
+                    time += step
+                shot_kwargs_list = _assemble_kwargs(shot=[shot],
+                                            stime=stimes,
+                                            efitnum=efitnum,
+                                            profdata=profdata,
+                                            beam_num=beam_num,
+                                            energykev=energykev,
+                                            nparts=nparts)
+                return_kwargs_list += shot_kwargs_list
+            
     nkwargs = len(return_kwargs_list)
     for n in range(nkwargs):
         return_kwargs[str(n)] = return_kwargs_list[n]
-    
     return return_kwargs
-
 
 def _assemble_kwargs(**kwargs):
     
@@ -246,5 +279,5 @@ if __name__ == '__main__':
 
     args = arg_parse()
 
-    inputs = assemble_ionorb_input_kwargs(nparts=[10000])
+    inputs = assemble_ionorb_input_kwargs(nparts=[1000,10000])
     make_sequential_test(inputs, machines=["polaris"],niter=16)
