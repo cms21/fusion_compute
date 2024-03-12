@@ -50,7 +50,7 @@ def plot_vs_nparts(run_timings,yvalue_label="flow_run_time",yvalue_norm=None, yl
         c+=1
 
     for machine in testing_machines:
-        ax.loglog(xvalues[machine],yvalues[machine],'s',c=colors[machine],label=machine)
+        ax.semilogx(xvalues[machine],yvalues[machine],'s',c=colors[machine],label=machine)
 
     
     ax.set_xlabel("Particle Count")
@@ -296,8 +296,6 @@ if __name__ == '__main__':
             if has_next_page:
                 marker = runs["marker"]
             page_run_ids = [r["run_id"] for r in runs if r["status"] == 'SUCCEEDED']
-            for r in runs:
-                print(r["label"])
             run_ids += page_run_ids        
             print(f"Found {len(run_ids)} runs in test {test_label}")
     else:
