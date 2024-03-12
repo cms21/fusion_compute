@@ -38,12 +38,12 @@ def run_flow(source_path,
     if destination_path is None and destination_relpath is None:
         raise Exception("No destination path set")
 
-    endpoint_status = endpoint_active(machine_settings[machine]["compute_endpoint"])
+    endpoint_status = endpoint_active(machine_settings()[machine]["compute_endpoint"])
     if dynamic and endpoint_status == False and destination_relpath != None:
-        for alternate_machine in machine_settings.keys():
+        for alternate_machine in machine_settings().keys():
             if alternate_machine == machine:
                 continue
-            endpoint_status = endpoint_active(machine_settings[alternate_machine]["compute_endpoint"])
+            endpoint_status = endpoint_active(machine_settings()[alternate_machine]["compute_endpoint"])
             if endpoint_status:
                 print(f"Switching to machine {alternate_machine} instead")
                 machine = alternate_machine
@@ -89,7 +89,7 @@ def set_flow_input(machine,
 
     flow_input = fusion_input
 
-    settings = machine_settings[machine]
+    settings = machine_settings()[machine]
 
     # If destination_relpath is set, override destination_path
     if destination_relpath != None:
@@ -103,7 +103,7 @@ def set_flow_input(machine,
         run_directory = os.path.join("/eagle","/".join(str(destination_path).split("/")[1:]))    
     
     # Set machine-specific flow inputs
-    flow_input["input"]["inputs_endpoint_id"] = machine_settings["omega"]["compute_endpoint"]
+    flow_input["input"]["inputs_endpoint_id"] = machine_settings()["omega"]["compute_endpoint"]
     flow_input["input"]["inputs_function_kwargs"] = {"run_directory": source_path, 
                                                      **inputs_function_kwargs}
     flow_input["input"]["destination"]["id"] = settings["transfer_endpoint"]
@@ -139,7 +139,7 @@ def arg_parse():
     parser.add_argument('--return_path', default='/home/simpsonc/fusion_return/', help=f'Path where files are returned on source machine')
     parser.add_argument('--label', default='ionorb-run', help=f'Flow label')
     parser.add_argument('--tags', nargs="*", help=f'Flow tags')
-    parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings.keys())
+    parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings().keys())
     parser.add_argument('--input_json', help='Path to the flow input .json file',
                         default="./input.json")
     parser.add_argument('--verbose', default=False, action='store_true', help=f'Verbose output')
@@ -154,10 +154,10 @@ if __name__ == '__main__':
         print(f"Running flow {flow_id}")
         print(f"Running on {args.machine}")
         print(f"Path on source endpoint is {args.source_path}")
-        print(f"Path on destination endpoint is {args.destination_path}")
+        print(f"Path on destination endpoint is {args.destination_path} or {args.destination_relpath}")
         print(f"Path on local machine to input.json is {args.input_json}")
         print(f"Flow label {args.label}")
-    run = run_flow(args.input_json, 
+    run = run_flow(
              args.source_path, 
              args.return_path,
              destination_path=args.destination_path,

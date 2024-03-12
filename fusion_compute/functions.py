@@ -147,7 +147,7 @@ def register_function(function):
 def arg_parse():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test', default=False, action='store_true', help=f'Test Function')
-    parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings.keys())
+    parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings().keys())
     parser.add_argument('--function', default='all', help=f'Function to register', choices=[ionorb_wrapper.__name__,
                                                                                             make_plots.__name__,
                                                                                             heatmapping.__name__,
@@ -161,7 +161,7 @@ if __name__ == '__main__':
 
     if args.test:
         machine = args.machine
-        settings = machine_settings[machine]
+        settings = machine_settings()[machine]
         if machine == "polaris":
             settings['scratch_path'] = "/eagle"+settings['scratch_path']
 
