@@ -1,0 +1,9 @@
+globus-sdk
+globus-cli
+globus-compute-endpoint
+numpy
+matplotlib
+python-dotenv
+python-dateutil
+argparse
+shortuuid

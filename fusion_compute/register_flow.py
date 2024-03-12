@@ -1,5 +1,6 @@
 from utils import get_flows_client, get_specific_flow_client
 from dotenv import load_dotenv
+from fusion_compute import ENV_PATH
 from flows import inputs_flow_definition as fusion_flow_definition
 from flows import fusion_input
 import os
@@ -7,7 +8,7 @@ import json
 import subprocess
 import argparse
 
-load_dotenv(dotenv_path="./fusion.env")
+load_dotenv(dotenv_path=ENV_PATH)
 
 def arg_parse():
     parser = argparse.ArgumentParser()
@@ -66,8 +67,9 @@ if __name__ == '__main__':
     # D3D endpoint not included here because it is a personal collection currently
     if reset_scopes:
         print("Resetting scopes")
-        if os.path.exists("~/.sdk-manage-flow.json"):
-            os.remove("~/.sdk-manage-flow.json")
+        if os.path.exists(f"{os.getenv('HOME')}/.sdk-manage-flow.json"):
+            print("removing tokens")
+            os.remove(f"{os.getenv('HOME')}/.sdk-manage-flow.json")
         collection_ids = [eid for eid in [os.getenv("GLOBUS_ALCF_EAGLE"),
                                           os.getenv("GLOBUS_NERSC_PERLMUTTER"),
                                           os.getenv("GLOBUS_OLCF")]

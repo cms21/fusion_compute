@@ -1,3 +1,9 @@
 fusion.env
 input.json
 *.tar
+*.npy
+*.pdf
+__pycache__
+fusion_compute/__pycache__
+dist
+*.egg-info

@@ -1,10 +1,11 @@
 import globus_compute_sdk
 from dotenv import load_dotenv
+from fusion_compute import ENV_PATH
 import os
 import argparse
-from start_fusion_flow import machine_settings
+from fusion_compute.machine_settings import machine_settings
 
-load_dotenv(dotenv_path="./fusion.env")
+load_dotenv(dotenv_path=ENV_PATH)
 
 def ionorb_wrapper(run_directory, bin_path, config_path="ionorb_stl2d_boris.config", outfile="out.hits.els.txt"):
     import subprocess, os, time, shutil, glob
@@ -123,7 +124,8 @@ def make_input_scripts(run_directory, shot=164869, stime=3005, efitnum="EFIT01",
     end = time.time()
     runtime = end - start
     return f"Input files created, runtime={runtime}"
-
+# arange(200,5000,100)
+# shot=163303
 def register_function(function):
     
     if function == ionorb_wrapper:
@@ -145,7 +147,7 @@ def register_function(function):
 def arg_parse():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test', default=False, action='store_true', help=f'Test Function')
-    parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings.keys())
+    parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings().keys())
     parser.add_argument('--function', default='all', help=f'Function to register', choices=[ionorb_wrapper.__name__,
                                                                                             make_plots.__name__,
                                                                                             heatmapping.__name__,
@@ -159,7 +161,7 @@ if __name__ == '__main__':
 
     if args.test:
         machine = args.machine
-        settings = machine_settings[machine]
+        settings = machine_settings()[machine]
         if machine == "polaris":
             settings['scratch_path'] = "/eagle"+settings['scratch_path']
 
@@ -176,16 +178,18 @@ if __name__ == '__main__':
             gce = globus_compute_sdk.Executor(endpoint_id=settings["compute_endpoint"])
 
             params = []
+            kwargs = {}
             if function == ionorb_wrapper:
                 params= ["/eagle/IRIBeta/csimpson/fusion_ionorb_slice_tests/s164869",
                          "/eagle/IRIBeta/fusion/bin"]
             elif function == make_input_scripts:
-                params= [os.path.join(settings["scratch_path"],"test_runs/test/1")]
+                params= [os.path.join(settings["scratch_path"],"test_functions/make_input_scripts")]
+                kwargs = {'shot':172578, 'stime':2600}
             elif function == heatmapping:
                 params= [settings["bin_path"], 
                          os.path.join(settings["scratch_path"],"test_runs/test")]
             
-            future = gce.submit(function,*params)
+            future = gce.submit(function,*params,**kwargs)
             print(future.result())
             
     else:

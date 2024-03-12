@@ -1,0 +1,28 @@
+engine:
+  address:
+    ifname: bond0
+    type: address_by_interface
+  available_accelerators: 4
+  cpu_affinity: 'list:24-31:16-23:8-15:0-7'
+  prefetch_capacity: 0
+  provider:
+    account: IRIBeta
+    cpus_per_node: 64
+    init_blocks: 0
+    launcher:
+      bind_cmd: --cpu-bind
+      overrides: --ppn 1
+      type: MpiExecLauncher
+    max_blocks: 1
+    min_blocks: 0
+    nodes_per_block: 1
+    queue: debug
+    scheduler_options: '#PBS -l filesystems=home:eagle'
+    select_options: ngpus=4
+    type: PBSProProvider
+    walltime: 00:60:00
+    worker_init: module load conda; conda activate /eagle/IRIBeta/fusion/fusion_env; export PATH=$PATH:/eagle/IRIBeta/fusion/bin/; cd $HOME/.globus_compute/polaris
+  strategy:
+    max_idletime: 300
+    type: SimpleStrategy
+  type: GlobusComputeEngine
