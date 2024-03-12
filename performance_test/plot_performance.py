@@ -3,6 +3,7 @@ from fusion_compute import ENV_PATH
 from fusion_compute.utils import get_flows_client
 from fusion_compute.machine_settings import machine_settings
 import os
+import argparse
 from dateutil.parser import parse
 from matplotlib import pyplot as plt
 import numpy as np
@@ -13,7 +14,7 @@ flow_id = os.getenv("GLOBUS_FLOW_ID")
 
 
 fc = get_flows_client(client_id=client_id)
-available_machines = machine_settings.keys()
+available_machines = machine_settings().keys()
 plt.rcParams['xtick.direction'] = plt.rcParams['ytick.direction'] = "in"
 color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
@@ -143,8 +144,12 @@ def plot_ionorb_timings(run_timings,testing_machines=None):
     min_val = min(min(function_values),min(action_values))
     max_val = max(max(function_values),max(action_values))
 
-    ratios = [(run_timings[rt]["IonOrb"]-run_timings[rt]["ionorb_function_time"])*100./run_timings[rt]["ionorb_function_time"]
+    #ratios = [(run_timings[rt]["IonOrb"]-run_timings[rt]["ionorb_function_time"])*100./run_timings[rt]["ionorb_function_time"]
+    #                    for rt in run_timings]
+
+    ratios = [run_timings[rt]["IonOrb"]/run_timings[rt]["ionorb_function_time"]
                         for rt in run_timings]
+        
     min_rval = min(ratios)
     max_rval = max(ratios)
         
@@ -160,6 +165,7 @@ def plot_ionorb_timings(run_timings,testing_machines=None):
         ratios = [run_timings[rt]["IonOrb"]/run_timings[rt]["ionorb_function_time"]
                         for rt in run_timings if run_timings[rt]["machine"] == machine]
         
+        
         ax_values.hist(function_values,histtype="step",color=colors[machine],ls='-',label=machine+"-function",range=(min_val,max_val),bins=20)
         ax_values.hist(action_values,histtype="step",color=colors[machine],ls='--',label=machine+"-action",range=(min_val,max_val),bins=20)
         
@@ -171,7 +177,7 @@ def plot_ionorb_timings(run_timings,testing_machines=None):
         
         ax_values.legend(loc=0)
         ax_values.set_xlabel("Run Time (s)")
-        ax_ratios.set_xlabel("Per cent difference in Run Time")
+        ax_ratios.set_xlabel("Action/Function Run Time Ratio")
         #ax.set_ylabel("Function Time (s)")
         c+=1
 
@@ -264,4 +270,42 @@ def make_plots(runs, type="all", testing_machines=None):
     plot_ionorb_timings(run_timings,testing_machines=testing_machines)
 
     return
+
+def arg_parse():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings().keys())
+    parser.add_argument('--test-label', default='796fKLmE', help=f'8 character test label id')
+    parser.add_argument('--test-file', default=None, help=f'npy file with test run ids')
+    
+    return parser.parse_args()
+
+
+if __name__ == '__main__':
+
+    args = arg_parse()
+
+    test_label = args.test_label
+    print(test_label)
+
+    if args.test_file is None:
+        run_ids = []
+      
+        has_next_page = True
+        marker = None
+        
+        while has_next_page:
+            runs = fc.list_runs(query_params={"filter_label":args.test_label},marker=marker)
+            has_next_page = runs["has_next_page"]
+            if has_next_page:
+                marker = runs["marker"]
+            page_run_ids = [r["run_id"] for r in runs if r["status"] == 'SUCCEEDED']
+            for r in runs:
+                print(r["label"])
+            run_ids += page_run_ids        
+            print(f"Found {len(run_ids)} runs in test {test_label}")
+    else:
+        run_ids = np.load(args.test_file)
+        print(f"Found {len(run_ids)} runs in test {test_label}")
+        
+    make_plots(run_ids,testing_machines=["polaris"])
 

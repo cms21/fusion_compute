@@ -5,6 +5,7 @@ from fusion_compute.utils import get_flows_client
 #from functions import hello_world
 from fusion_compute.machine_settings import machine_settings
 from fusion_compute.start_fusion_flow import run_flow
+from globus_compute_sdk.serialize import CombinedCode
 import os
 import time
 import shortuuid
@@ -52,11 +53,7 @@ def run_perf_instance(machine="polaris",
                       return_path='/home/simpsonc/fusion_return/',
                       test_label="perf_test"):
     
-    settings = machine_settings[machine]
-    
-    run_id = run_flow(input_json="./input.json",
-                    source_path=source_path,
-                    destination_path=f'{settings["scratch_path"]}/test_runs/test/',
+    run_id = run_flow(source_path=source_path,
                     return_path=return_path,
                     destination_relpath=destination_relpath,
                     machine=machine,
@@ -65,10 +62,14 @@ def run_perf_instance(machine="polaris",
                     )
     return run_id
 
-def run_and_wait_for_workers(inputs_batch, machine="polaris",niter_per_instance=1,test_label="perf_test",retry_failed=False):
+def run_and_wait_for_workers(inputs_batch, 
+                             machine="polaris",
+                             niter_per_instance=1,
+                             test_label="perf_test",
+                             retry_failed=False):
 
     n_workers = get_endpoint_workers(machine=machine)
-    print(f'worker count {n_workers}')
+    inputs_keys = [k for k in inputs_batch.keys()]
     
     batch_status = []
     batch_runs = []
@@ -79,17 +80,17 @@ def run_and_wait_for_workers(inputs_batch, machine="polaris",niter_per_instance=
     for i in range(nruns):
         # Get inputs for instance
         if i%niter_per_instance == 0:
-            input_batch = inputs_batch.keys()[instance]
-            inputs_function_kwargs = inputs_batch[input_batch]
+            input_key = inputs_keys[instance]
+            inputs_function_kwargs = inputs_batch[input_key]
             instance += 1
         
 
         run_id = run_perf_instance(machine=machine,
                                 inputs_function_kwargs=inputs_function_kwargs,
-                                source_path=f'/home/simpsonc/fusion/{test_label}/{machine}/{input_batch}/{i}',
-                                return_path=f'/home/simpsonc/fusion_return/{test_label}/{machine}/{input_batch}/{i}',
-                                destination_relpath=f"test_runs/{test_label}/{input_batch}/{i}",
-                                test_label=f"{test_label}_{input_batch}_{i}"
+                                source_path=f'/home/simpsonc/fusion/{test_label}/{machine}/{input_key}/{i}',
+                                return_path=f'/home/simpsonc/fusion_return/{test_label}/{machine}/{input_key}/{i}',
+                                destination_relpath=f"test_runs/{test_label}/{input_key}/{i}",
+                                test_label=f"{test_label}_{input_key}_{i}"
                                 )
         batch_runs.append(run_id)
         batch_status.append(fc.get_run(run_id)["status"])
@@ -106,7 +107,6 @@ def run_and_wait_for_workers(inputs_batch, machine="polaris",niter_per_instance=
             for rs,sc in zip(report_status,status_count):
                 status_string+=f"{sc} run(s) {rs}, "
             status_string += f"{n_workers} workers"
-            print(status_string)
             time.sleep(10)
 
             for i in range(len(batch_runs)):
@@ -120,7 +120,6 @@ def run_and_wait_for_workers(inputs_batch, machine="polaris",niter_per_instance=
         status_string+=f"{sc} run(s) {rs} "
         if rs == "FAILED":
             n_failed = sc
-    print(status_string)
     
     # if retry_failed and n_failed > 0:
     #     print(f"Retrying {n_failed} runs")
@@ -138,15 +137,16 @@ def activate_endpoint(machine="polaris"):
     def hello_world():
         import os
         return f"Hello CUDA device {os.getenv('CUDA_VISIBLE_DEVICES')}, hello OMP {os.getenv('OMP_NUM_THREADS')}"
-
-    settings = machine_settings[machine]
-    gce = globus_compute_sdk.Executor(endpoint_id=settings["compute_endpoint"])
+    
+    settings = machine_settings()[machine]
+    gcc = globus_compute_sdk.Client(code_serialization_strategy=CombinedCode())
+    gce = globus_compute_sdk.Executor(endpoint_id=settings["compute_endpoint"],client=gcc)
     future = gce.submit(hello_world)
     print(future.result())
     return
 
 def get_endpoint_workers(machine="polaris",max_wait = 300):
-    settings = machine_settings[machine]
+    settings = machine_settings()[machine]
     compute_endpoint_id = settings["compute_endpoint"]
     gc = globus_compute_sdk.Client()
     n_workers = 0
@@ -192,7 +192,6 @@ def assemble_ionorb_input_kwargs(testfile=None,
                           beam_num=[1], 
                           energykev=["FULL"], 
                           nparts=[1000],):
-    print(nparts)
     return_kwargs = {}
     if testfile == None:
         return_kwargs_list = _assemble_kwargs( 
@@ -216,7 +215,7 @@ def assemble_ionorb_input_kwargs(testfile=None,
 def _assemble_kwargs(**kwargs):
     
     return_kwargs = []
-    print(kwargs)
+ 
     nruns = 1
     for key in kwargs:
         nruns *= len(kwargs[key])
@@ -224,7 +223,6 @@ def _assemble_kwargs(**kwargs):
 
     for n in range(nruns):
        return_kwargs.append({})
-    print(return_kwargs)
 
     for key in kwargs:
         iv = 0
@@ -239,7 +237,7 @@ def _assemble_kwargs(**kwargs):
 
 def arg_parse():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings.keys())
+    parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings().keys())
     
     return parser.parse_args()
 
@@ -248,7 +246,5 @@ if __name__ == '__main__':
 
     args = arg_parse()
 
-    #make_sequential_test(machines=["polaris"],particle_counts=[1000],niter=4)
     inputs = assemble_ionorb_input_kwargs(nparts=[10000])
-    print(inputs)
     make_sequential_test(inputs, machines=["polaris"],niter=16)

@@ -67,6 +67,8 @@ def run_flow(source_path,
         label = machine+'_'+label
         if tags == None: tags = []
         tags+=[machine]
+
+        print(flow_input)
         
         flow_action = flow_client.run_flow(body=flow_input,
                                             label=label,
