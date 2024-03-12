@@ -1,5 +1,5 @@
-from performance_test.performance_test import make_sequential_test
-from performance_test.performance_test import assemble_ionorb_input_kwargs
+from performance_test import make_sequential_test
+from performance_test import assemble_ionorb_input_kwargs
 
 if __name__ == '__main__':
     inputs = assemble_ionorb_input_kwargs(testfile="collection_of_multi-slice_shots.txt",

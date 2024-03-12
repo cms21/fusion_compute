@@ -72,7 +72,7 @@ def run_and_wait_for_workers(inputs_batch,
     
     batch_status = []
     batch_runs = []
-    
+
     instance = 0
     # Total number of runs
     nruns = len(inputs_batch)*niter_per_instance
@@ -93,7 +93,6 @@ def run_and_wait_for_workers(inputs_batch,
                                 )
         batch_runs.append(run_id)
         batch_status.append(fc.get_run(run_id)["status"])
-        n_created += 1
         
         n_running = len([status for status in batch_status if status in ["ACTIVE","INACTIVE"]])
     

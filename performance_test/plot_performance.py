@@ -95,8 +95,6 @@ def plot_actions(run_timings, testing_machines = None, actions = ["Make_Inputs",
 
     fig = plt.figure()
 
-    #fig, ax = plt.subplots()
-
     if testing_machines is None:
         testing_machines = np.unique([run_timings[rt]["machine"] for rt in run_timings])
     
@@ -127,7 +125,6 @@ def plot_actions(run_timings, testing_machines = None, actions = ["Make_Inputs",
 def plot_ionorb_timings(run_timings,testing_machines=None):
 
     fig = plt.figure()
-    #fig, ax = plt.subplots()
 
     if testing_machines is None:
         testing_machines = np.unique([run_timings[rt]["machine"] for rt in run_timings])
@@ -143,9 +140,6 @@ def plot_ionorb_timings(run_timings,testing_machines=None):
             
     min_val = min(min(function_values),min(action_values))
     max_val = max(max(function_values),max(action_values))
-
-    #ratios = [(run_timings[rt]["IonOrb"]-run_timings[rt]["ionorb_function_time"])*100./run_timings[rt]["ionorb_function_time"]
-    #                    for rt in run_timings]
 
     ratios = [run_timings[rt]["IonOrb"]/run_timings[rt]["ionorb_function_time"]
                         for rt in run_timings]
@@ -274,7 +268,7 @@ def make_plots(runs, type="all", testing_machines=None):
 def arg_parse():
     parser = argparse.ArgumentParser()
     parser.add_argument('--machine', default='polaris', help=f'Target machine for flow', choices=machine_settings().keys())
-    parser.add_argument('--test-label', default='796fKLmE', help=f'8 character test label id')
+    parser.add_argument('--test-label', default=None, help=f'8 character test label id')
     parser.add_argument('--test-file', default=None, help=f'npy file with test run ids')
     
     return parser.parse_args()
@@ -285,7 +279,10 @@ if __name__ == '__main__':
     args = arg_parse()
 
     test_label = args.test_label
-    print(test_label)
+    test_file = args.test_file
+
+    if test_label is None and test_file is None:
+        raise Exception("Use test_label or test_file")
 
     if args.test_file is None:
         run_ids = []
@@ -304,7 +301,7 @@ if __name__ == '__main__':
             run_ids += page_run_ids        
             print(f"Found {len(run_ids)} runs in test {test_label}")
     else:
-        run_ids = np.load(args.test_file)
+        run_ids = np.load(test_file)
         print(f"Found {len(run_ids)} runs in test {test_label}")
         
     make_plots(run_ids,testing_machines=["polaris"])

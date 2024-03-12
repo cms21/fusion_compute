@@ -1,4 +1,5 @@
 # fusion_compute
+
 This repository contains scripts to deploy the Ionorb workflow for DIII-D on machines at ALCF and NERSC.  This implementation uses Globus Flows.  It requires the user to setup the various Globus transfer and compute endpoints under the user's account.  Future work will make use of a DIII-D institutional transfer endpoint and compute endpoints run by service and robot accounts at ALCF and NERSC.  There is also planned development to create inputs using Toksys and FORTRAN code.
 
 This repositiory will allow a user to trigger a Globus flow that will run Ionorb on Polaris or Perlmutter from the user's local machine.  The steps that each flow run does are:
@@ -21,7 +22,7 @@ Login to Omega.
 First clone this repo:
 
 ```bash
-git clone
+git clone git@github.com:cms21/fusion_compute.git
 ```
 
 Load the globus module and configure the compute endpoint:
@@ -31,95 +32,126 @@ module load globus
 cd fusion_compute/endpoint_configs
 globus-compute-endpoint configure --endpoint-config omega_short_config.yaml omega_short
 globus-compute-endpoint start omega_short
+globus-compute-endpoint list
 ```
+Copy the compute endpoint ID.
 
-If you need to make any adjustments to your endpoint configuration, you can find the 
+Next, create a Globus connect personal transfer endpoint.  Follow instructions [here](https://docs.globus.org/globus-connect-personal/install/linux/).  Start the transfer endpoint and copy the transfer endpoint ID.
+
+(Once the DIII-D institutional endpoint is available, this step won't be necessary.)
 
 ## 2. Setup on Polaris
 
-### Clone this repo
+First clone this repo:
 
 ```bash
-git clone
+git clone git@github.com:cms21/fusion_compute.git
 ```
 
-
-
-### Load conda module installed under the IRIBeta/fusion space
+Load the globus module and configure the compute endpoint:
 
 ```bash
 module load conda
 conda activate /eagle/IRIBeta/fusion/fusion_env
-```
-
-### Create a Globus Endpoint
-Use the provided `<MACHINE>_config.yml_template` as a model to configure your endpoint in the [endpoint_configs](endpoint_configs) directory. Edit it to replace your project name, environment name, etc.  Then do:
-
-```bash
 cd fusion_compute/endpoint_configs
-globus-compute-endpoint configure --endpoint-config config.yml_template <YOUR_ENDPOINT_NAME>
-globus-compute-endpoint start <YOUR_ENDPOINT_NAME>
+globus-compute-endpoint configure --endpoint-config polaris_config_template.yaml polaris
+globus-compute-endpoint start polaris
 globus-compute-endpoint list
 ```
 
-Copy the endpoint ID for the next step.
+Copy the compute endpoint ID.
 
 ## 3. Setup on Perlmutter
 
 
 ## 4. Setup on Local Machine
 
+### 1. First clone this repo:
 
-### 1. Clone this repo
-Clone this repo. Paste your compute enpoint IDs for Polaris and/or Perlmutter into `fusion.env_template` and copy it to `fusion.env`.  Also paste in the source endpoint id into the file.
+```bash
+git clone git@github.com:cms21/fusion_compute.git
+```
+
+### 2. Install
+
+Create a conda module or a python virtual environment.  Install this package and its dependencies.
+
+```bash
+cd fusion_compute
+pip install -e .
+```
+
+### 3. Copy fusion.env_template to fusion.env
 
 ```bash
 cp fusion.env_template fusion.env
 ```
-### 2. Make an environment and install globus
+Edit `fusion.env`.  Paste in your compute endpoint ids.
 
-Make a conda environment.
-```bash
-module load conda/py3.9-spyder
-conda create -n globus python=3.9
-conda activate globus
-```
-Install required packages.
-```bash
-conda install globus-compute-sdk globus-automate-client globus-cli python-dotenv 
-```
+### 4. Machine settings
 
-### 3. Run the setup script
+In [machine_settings.py](fusion_compute/machine_settings.py), edit any necessary paths on the machines you are using.
+
+### 5. Test functions.
+
+Test the functions used in the workflow.  First, test on Omega:
+
 ```bash
-python setup_flow.py
+cd fusion_compute
+python functions.py --test --machine omega
 ```
 
-When running this script for the first time, you will be asked to authenticate your ALCF credentials with globus.  Running this script should create a new file `input.json` and modify `fusion.env` by adding some new environment variables containing the IDs of the flow and functions.
-
-Login to globus.  You will be directed to a web page to validate your globus credentials.
+Then, test on Polaris/Perlmutter:
 ```bash
-globus login
+cd fusion_compute
+python functions.py --test --machine polaris
 ```
 
-### 4. Run the flow
+You may be prompted to validate your credentials with Globus if this is your first time running a Globus Compute function. 
 
-You can start a flow by using the python script:
+Note that these tests will appear to hang while your job is queued on the machine scheduler.  For this first test, check to see if your job has been created.
+
+### 6. Register your functions
+
 ```bash
+cd fusion_compute
+python functions.py
+```
+
+You should see the function ids appear in fusion.env.
+
+### 7. Set up the flow and establish authentication with the Globus Service.
+
+```bash
+cd fusion_compute
+python register_flow.py
+```
+
+You should be prompted to establish your credentials with the Globus service twice.
+
+You should see the Flow id appear in fusion.env.
+
+### 8. Test the flow.
+
+```bash
+cd fusion_compute
 python start_fusion_flow.py --source_path <SRC_PATH> --destination_path <DEST_PATH> --return_path <RET_PATH>
 ```
-You will be prompted to validate your globus credentials the first time you run this script.  Additionally, you may recieve an email from the Globus service saying your flow "requires attention".  If you do recieve this email, restart the flow from the same CLI with this command `globus-automate flow run-resume --query-for-inactive-reason --flow-id <FLOW_ID> <RUN_ID>`.  Currently, this code base uses the `globus-automate` client so you need to use the `globus-automate` CLI call; the email you recieve will give you a command that starts with `globus flows` but do not use this, as it assumes a different type of client.  We will be updating this repository to use the newer globus client, but until that change has been made use the `globus-automate` CLI tool.  This email will include the `RUN_ID`.  After validating your credentials for this first run with the `globus-automate` tool, you should not have to validate again.
+`<SRC_PATH>` and `<RET_PATH>` are paths on Omega (where the input files are created and where results are returned at the end of the flow).
 
-The path `<SRC_PATH>` and `<RET_PATH>` should be paths on the source machine and `<DEST_PATH>` should be a path on the destination machine (eagle).
+`<DEST_PATH>` is a path on Polaris or Perlmutter.
 
-### 5. Trigger Script
 
-There's a trigger bash script that wraps around `start_fusion_flow.py`, [iris_trigger.sh](iris_trigger.sh).  This could be used to bundle the flow with the local execution of IDL scripts.
+## Trigger Script
+
+There's a trigger bash script that wraps around `start_fusion_flow.py`, [d3d_trigger.sh](d3d_trigger.sh).  This could be used to bundle the flow with the local execution of IDL scripts.
 
 You can run the trigger script like this
 ```bash
-iris_trigger.sh --machine <MACHINE> --dynamic
+d3d_trigger.sh --machine <MACHINE> --dynamic
 ```
 If you include the --machine option, the flow will attempt to run on that machine.  If it is not included, it will try to run on Polaris.  If `--dynamic` is included, the agent will adapt to run on a different machine if the first-choice machine is not available.
-### 6. Tutorial Notebook
 
-There's a Jupyter notebook [Fusion_tutorial_example.ipynb](Fusion_tutorial_example.ipynb) that runs a simplified flow and breaks down how to deploy it with explanations.
+## Performance test
+
+## Performance plots
