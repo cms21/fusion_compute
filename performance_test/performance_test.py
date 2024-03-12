@@ -65,7 +65,7 @@ def run_and_wait_for_workers(inputs_batch,
                              machine="polaris",
                              niter_per_instance=1,
                              test_label="perf_test",
-                             retry_failed=False):
+                             retry_failed=True):
 
     n_workers = get_endpoint_workers(machine=machine)
     inputs_keys = [k for k in inputs_batch.keys()]
@@ -125,6 +125,7 @@ def run_and_wait_for_workers(inputs_batch,
                                 destination_relpath=f"test_runs/{test_label}/{failed_input_key}/{i}",
                                 test_label=f"{test_label}_{failed_input_key}_{i}"
                                 )
+                    batch_status[i] = "RESTARTED"
                     batch_kwargs.append(failed_input_kwargs)
                     batch_runs.append(run_id)
                     batch_status.append(fc.get_run(run_id)["status"])
