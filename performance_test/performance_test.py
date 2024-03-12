@@ -72,6 +72,8 @@ def run_and_wait_for_workers(inputs_batch,
     
     batch_status = []
     batch_runs = []
+    batch_kwargs = []
+    batch_input_keys = []
 
     instance = 0
     # Total number of runs
@@ -83,7 +85,6 @@ def run_and_wait_for_workers(inputs_batch,
             inputs_function_kwargs = inputs_batch[input_key]
             instance += 1
         
-
         run_id = run_perf_instance(machine=machine,
                                 inputs_function_kwargs=inputs_function_kwargs,
                                 source_path=f'/home/simpsonc/fusion/{test_label}/{machine}/{input_key}/{i}',
@@ -91,6 +92,8 @@ def run_and_wait_for_workers(inputs_batch,
                                 destination_relpath=f"test_runs/{test_label}/{input_key}/{i}",
                                 test_label=f"{test_label}_{input_key}_{i}"
                                 )
+        batch_input_keys.append(input_key)
+        batch_kwargs.append(inputs_function_kwargs)
         batch_runs.append(run_id)
         batch_status.append(fc.get_run(run_id)["status"])
         
@@ -108,7 +111,24 @@ def run_and_wait_for_workers(inputs_batch,
             time.sleep(10)
             print(status_string)
             for i in range(len(batch_runs)):
-                batch_status[i] = fc.get_run(batch_runs[i])["status"]
+                status = fc.get_run(batch_runs[i])["status"]
+                batch_status[i] = status
+                if status == 'FAILED' and retry_failed:
+                    print("run failed")
+                    failed_input_kwargs = batch_kwargs[i]
+                    failed_input_key = batch_input_keys[i]
+                    run_id = run_perf_instance(machine=machine,
+                                inputs_function_kwargs=inputs_function_kwargs,
+                                source_path=f'/home/simpsonc/fusion/{test_label}/{machine}/{failed_input_key}/{i}',
+                                return_path=f'/home/simpsonc/fusion_return/{test_label}/{machine}/{failed_input_key}/{i}',
+                                destination_relpath=f"test_runs/{test_label}/{failed_input_key}/{i}",
+                                test_label=f"{test_label}_{failed_input_key}_{i}"
+                                )
+                    batch_status[i] = "RESTARTED"
+                    batch_kwargs.append(failed_input_kwargs)
+                    batch_runs.append(run_id)
+                    batch_status.append(fc.get_run(run_id)["status"])
+
             n_running = len([status for status in batch_status if status in ["ACTIVE","INACTIVE"]])
         
 

@@ -10,12 +10,20 @@ This repositiory will allow a user to trigger a Globus flow that will run Ionorb
 #### 4. Run a postprocessing analysis script that uses the outputs of Ionorb to compute the peak power deposited on the DIII-D inner wall
 #### 5. Transfer Ionorb results back to Omega at DIII-D
 
-## 1. Setup on Omega at DIII-D
+## 1. Get a Globus Client ID
+
+You can create a new Client ID by going to [developers.globus.org](developers.globus.org).  Click on "Register a thick client or script that will be installed and run by users on their devices".
+
+If you'd like to skip this step, email Christine at csimpson@anl.gov and she can share a client id for you to use.
+
+## 2. Setup on Omega at DIII-D
+
+Login to Omega.
 
 ### 0. Create Globus Transfer endpoint
 NOTE!!! Once DIII-D has installed its planned institutional Globus transfer endpoint, the user should use that endpoint and skip this step.
 
-Login to Omega.
+Create a Globus connect personal transfer endpoint.  Follow instructions [here](https://docs.globus.org/globus-connect-personal/install/linux/).  Start the transfer endpoint and copy the transfer endpoint ID.
 
 ### 1. Load the globus module and create a Globus Compute endpoint
 
@@ -36,11 +44,9 @@ globus-compute-endpoint list
 ```
 Copy the compute endpoint ID.
 
-Next, create a Globus connect personal transfer endpoint.  Follow instructions [here](https://docs.globus.org/globus-connect-personal/install/linux/).  Start the transfer endpoint and copy the transfer endpoint ID.
+## 3. Setup on Polaris
 
-(Once the DIII-D institutional endpoint is available, this step won't be necessary.)
-
-## 2. Setup on Polaris
+Login to Polaris.
 
 First clone this repo:
 
@@ -61,10 +67,10 @@ globus-compute-endpoint list
 
 Copy the compute endpoint ID.
 
-## 3. Setup on Perlmutter
+## 4. Setup on Perlmutter
 
 
-## 4. Setup on Local Machine
+## 5. Setup on Local Machine
 
 ### 1. First clone this repo:
 
@@ -154,4 +160,41 @@ If you include the --machine option, the flow will attempt to run on that machin
 
 ## Performance test
 
+There are two performance test runners `make_delay_test()` and `make_sequential_test()`.
+
+`make_delay_test()` will take a batch of test flows and run 1 flow every `delay` time, where `delay` is a time specified in seconds.
+
+`make_sequential_test()` will detect the number of active workers on Polaris/Perlmutter and only create enough active flows to fill those workers.  This test runner should be used when testing action performance.  In this test, the Ionorb action will begin immediately and therefore will not include wait time from the machine scheduler or the globus compute interchange.
+
+To run a sequential test:
+```python
+from performance_test import make_sequential_test
+from performance_test import assemble_ionorb_input_kwargs
+
+inputs = assemble_ionorb_input_kwargs(nparts=[1000,10000,100000])
+
+make_sequential_test(inputs, machines=["polaris"],niter=16)
+```
+This will run the test slice 16 times for 3 different particle numbers, 1000, 10,000 and 100,000 particles.
+
+To run slices from a file:
+```python
+from performance_test import make_sequential_test
+from performance_test import assemble_ionorb_input_kwargs
+
+inputs = assemble_ionorb_input_kwargs(testfile="collection_of_multi-slice_shots.txt",
+                                          nparts=[50000])
+make_sequential_test(inputs, machines=["polaris"],niter=1)
+```
+This will run a 50,000 particle test for every slice contained in the `testfile` one time.
+
+An 8 character random string will be assigned to each sequential test.  This string can be used to query the runs of the test.
+
 ## Performance plots
+
+To create performance plots of a test, use the `test_label`.
+
+For example:
+```bash
+python plot_performance.py --test-label DHtaGbRZ
+```

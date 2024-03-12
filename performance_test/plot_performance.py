@@ -91,6 +91,55 @@ def plot_actions_per_nparts(run_timings, actions = ["Make_Inputs", "Transfer_In"
     plt.close(fig)
     return
 
+def plot_histogram(run_timings,
+                   value_label="flow_run_time",
+                   value_norm=None, 
+                   xlabel="Flow Run Time (s)", 
+                   ax=None):
+
+    savefig = False
+    if not ax:
+        fig,ax = plt.subplots()
+        plotname = "perf_hist_"+value_label
+        if value_norm:
+            plotname += "_per_"+value_norm
+        plotname += ".pdf"
+        savefig = True
+
+    testing_machines = np.unique([run_timings[rt]["machine"] for rt in run_timings])
+    
+    colors = {}
+    values = {}
+
+    c = 0
+    for machine in testing_machines:
+        colors[machine] = color_cycle[c]
+        # xvalues[machine] = [run_timings[rt]["nparts"] 
+        #                     for rt in run_timings if run_timings[rt]["machine"] == machine]
+        values[machine] = [run_timings[rt][value_label]
+                            for rt in run_timings if run_timings[rt]["machine"] == machine]
+        if value_norm:
+            norms = [run_timings[rt][value_norm] 
+                     for rt in run_timings if run_timings[rt]["machine"] == machine]
+            values[machine] = [values[machine][i]/norms[i] for i in range(len(norms))]
+        c+=1
+
+    for machine in testing_machines:
+        #ax.semilogx(xvalues[machine],yvalues[machine],'s',c=colors[machine],label=machine)
+        ax.hist(values[machine],histtype="step",color=colors[machine],ls='-',label=machine,bins=20)
+        #ax_values.hist(function_values,histtype="step",color=colors[machine],ls='-',label=machine+"-function",range=(min_val,max_val),bins=20)
+
+    
+    
+    if xlabel:
+        ax.set_xlabel(xlabel)
+    if savefig:
+        ax.legend(loc=0)
+        fig.tight_layout()
+        fig.savefig(plotname,format="pdf")
+        print(f"Saving {plotname}")
+        plt.close(fig)
+
 def plot_actions(run_timings, testing_machines = None, actions = ["Make_Inputs", "Transfer_In", "IonOrb", "Postprocessing", "Transfer_Out"]):
 
     fig = plt.figure()
@@ -257,6 +306,7 @@ def make_plots(runs, type="all", testing_machines=None):
     print("Retrieved Run Timings")
 
     plot_vs_nparts(run_timings)
+    plot_histogram(run_timings)
     plot_vs_nparts(run_timings,yvalue_norm="nparts",ylabel="Flow Run Time per Particle (s)")
     plot_actions_per_nparts(run_timings)
 
