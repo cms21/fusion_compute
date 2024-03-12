@@ -65,7 +65,7 @@ def run_and_wait_for_workers(inputs_batch,
                              machine="polaris",
                              niter_per_instance=1,
                              test_label="perf_test",
-                             retry_failed=True):
+                             retry_failed=False):
 
     n_workers = get_endpoint_workers(machine=machine)
     inputs_keys = [k for k in inputs_batch.keys()]
