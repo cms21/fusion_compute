@@ -113,6 +113,15 @@ def make_input_scripts(run_directory, shot=164869, stime=3005, efitnum="EFIT01",
         runtime = end - start
         raise Exception(f"create_birth failed: {res.returncode} stdout='{res.stdout.decode('utf-8')}' stderr='{res.stderr.decode('utf-8')}' runtime={runtime} command={command}")
     
+    # Check the number of particles in the birth file
+    nbirth = '0'
+    birth_file = glob.glob("birth*.dat")[0]
+    with open(birth_file,"r") as f:
+        lines = f.readlines()
+        for line in lines:
+            if line[0:4] == 'nels':
+                nbirth = line.split()[-1]
+
     # Create config file
     command = f"/home/simpsonc/ionorbgpu/v2/tools/ionorb_generate_config"
     res = subprocess.run(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -123,7 +132,7 @@ def make_input_scripts(run_directory, shot=164869, stime=3005, efitnum="EFIT01",
 
     end = time.time()
     runtime = end - start
-    return f"Input files created, runtime={runtime}"
+    return f"Input files created",runtime,nbirth
 # arange(200,5000,100)
 # shot=163303
 def register_function(function):
@@ -140,7 +149,7 @@ def register_function(function):
         return "Unknown function"
     gc = globus_compute_sdk.Client()
     fusion_func = gc.register_function(function)
-    with open("fusion.env", "a") as f:
+    with open(ENV_PATH, "a") as f:
         f.write(f"{envvarname}={fusion_func}\n")
     return f"{envvarname}={fusion_func}"
 

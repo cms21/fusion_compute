@@ -65,44 +65,44 @@ def run_and_wait_for_workers(inputs_batch,
                              machine="polaris",
                              niter_per_instance=1,
                              test_label="perf_test",
-                             retry_failed=False):
+                             retry_failed=True):
 
-    n_workers = get_endpoint_workers(machine=machine)
+    n_workers = get_endpoint_workers(machine=machine,verbose=True)
     inputs_keys = [k for k in inputs_batch.keys()]
     
     batch_status = []
     batch_runs = []
     batch_kwargs = []
     batch_input_keys = []
+    instance = 0 
+    failed_inputs_batch = {}
 
-    instance = 0
-    # Total number of runs
     nruns = len(inputs_batch)*niter_per_instance
-    for i in range(nruns):
+    
+    for run in range(nruns):
         # Get inputs for instance
-        if i%niter_per_instance == 0:
+        if run%niter_per_instance == 0:
             input_key = inputs_keys[instance]
             inputs_function_kwargs = inputs_batch[input_key]
             instance += 1
         
         run_id = run_perf_instance(machine=machine,
                                 inputs_function_kwargs=inputs_function_kwargs,
-                                source_path=f'/home/simpsonc/fusion/{test_label}/{machine}/{input_key}/{i}',
-                                return_path=f'/home/simpsonc/fusion_return/{test_label}/{machine}/{input_key}/{i}',
-                                destination_relpath=f"test_runs/{test_label}/{input_key}/{i}",
-                                test_label=f"{test_label}_{input_key}_{i}"
+                                source_path=f'/home/simpsonc/fusion/{test_label}/{machine}/{input_key}/{run}',
+                                return_path=f'/home/simpsonc/fusion_return/{test_label}/{machine}/{input_key}/{run}',
+                                destination_relpath=f"test_runs/{test_label}/{input_key}/{run}",
+                                test_label=f"{test_label}_{input_key}_{run}"
                                 )
         batch_input_keys.append(input_key)
         batch_kwargs.append(inputs_function_kwargs)
         batch_runs.append(run_id)
         batch_status.append(fc.get_run(run_id)["status"])
-        
         n_running = len([status for status in batch_status if status in ["ACTIVE","INACTIVE"]])
-    
-        # Pause if all workers are running flows or if we are on the last run and are waiting for remaining runs to complete
-        while (n_running == min(n_workers,nruns)) or (i == nruns-1 and ("ACTIVE" in batch_status or "INACTIVE" in batch_status)):
 
-            n_workers = get_endpoint_workers(machine=machine)
+        # Pause if all workers are running flows or if we are on the last run and are waiting for remaining runs to complete
+        while (n_running == min(n_workers,nruns)) or (run == nruns-1 and ("ACTIVE" in batch_status or "INACTIVE" in batch_status)):
+            n_running = len([status for status in batch_status if status in ["ACTIVE","INACTIVE"]])
+            #n_workers = get_endpoint_workers(machine=machine,verbose=True)
             report_status,status_count = np.unique(batch_status,return_counts=True)
             status_string = "status: "
             for rs,sc in zip(report_status,status_count):
@@ -110,35 +110,35 @@ def run_and_wait_for_workers(inputs_batch,
             status_string += f"{n_workers} workers"
             time.sleep(10)
             print(status_string)
-            for i in range(len(batch_runs)):
-                status = fc.get_run(batch_runs[i])["status"]
-                batch_status[i] = status
-                if status == 'FAILED' and retry_failed:
-                    print("run failed")
-                    failed_input_kwargs = batch_kwargs[i]
-                    failed_input_key = batch_input_keys[i]
-                    run_id = run_perf_instance(machine=machine,
-                                inputs_function_kwargs=inputs_function_kwargs,
-                                source_path=f'/home/simpsonc/fusion/{test_label}/{machine}/{failed_input_key}/{i}',
-                                return_path=f'/home/simpsonc/fusion_return/{test_label}/{machine}/{failed_input_key}/{i}',
-                                destination_relpath=f"test_runs/{test_label}/{failed_input_key}/{i}",
-                                test_label=f"{test_label}_{failed_input_key}_{i}"
-                                )
-                    batch_status[i] = "RESTARTED"
-                    batch_kwargs.append(failed_input_kwargs)
-                    batch_runs.append(run_id)
-                    batch_status.append(fc.get_run(run_id)["status"])
-
-            n_running = len([status for status in batch_status if status in ["ACTIVE","INACTIVE"]])
-        
-
+            for ir in range(len(batch_runs)):
+                if batch_status[ir] in ["ACTIVE","INACTIVE"]:
+                    run_info = fc.get_run(batch_runs[ir])
+                    status = run_info["status"]
+                    batch_status[ir] = status
+                    if status == 'FAILED':
+                        cause = run_info["details"]["details"]["cause"]["details"]["result"][0]
+                        # If the cause of the failure was an interrupted function due a batch job ending, restart
+                        # The exception in this case will be 'ManagerLost'
+                        if "ManagerLost" in cause:
+                            print("run failed")
+                            batch_status[ir] = "MANAGER_LOST"
+                            failed_inputs_batch[batch_input_keys[ir]] = batch_kwargs[ir]
+                            
     report_status,status_count = np.unique(batch_status,return_counts=True)
     status_string = "final status: "
     for rs,sc in zip(report_status,status_count):
         status_string+=f"{sc} run(s) {rs} "
-        if rs == "FAILED":
-            n_failed = sc
     print(status_string)
+
+    if retry_failed:
+        print(f"Retrying {len(failed_inputs_batch)} runs")
+        retry_batch_runs = run_and_wait_for_workers(failed_inputs_batch,
+                                 machine=machine,
+                                 niter_per_instance=niter_per_instance,
+                                 test_label=test_label,
+                                 retry_failed=retry_failed)
+        batch_runs += retry_batch_runs
+
     return batch_runs
 
 def activate_endpoint(machine="polaris"):
@@ -154,7 +154,7 @@ def activate_endpoint(machine="polaris"):
     print(future.result())
     return
 
-def get_endpoint_workers(machine="polaris",max_wait = 300):
+def get_endpoint_workers(machine="polaris",max_wait = 300, verbose=False):
     settings = machine_settings()[machine]
     compute_endpoint_id = settings["compute_endpoint"]
     gc = globus_compute_sdk.Client()
@@ -162,13 +162,16 @@ def get_endpoint_workers(machine="polaris",max_wait = 300):
     time_elapsed = 0
     start_time = time.time()
     while n_workers == 0 and time_elapsed < max_wait:
+        if verbose:
+            print(f"Querying workers: found {n_workers} after {time_elapsed}s")
         endpoint_status = gc.get_endpoint_status(compute_endpoint_id)
         n_workers = int(endpoint_status["details"]["total_workers"])
         time_elapsed = time.time() - start_time
+        time.sleep(10)
     if n_workers > 0:
         return n_workers
     else:
-        raise Exception
+        activate_endpoint(machine=machine)
 
 def make_sequential_test(inputs_batch, machines=["polaris","perlmutter"],niter=1):
 
