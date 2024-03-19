@@ -33,10 +33,12 @@ First clone this repo:
 git clone git@github.com:cms21/fusion_compute.git
 ```
 
-Load the globus module and configure the compute endpoint:
+Activate the globus environment and create the compute endpoint:
 
 ```bash
-module load globus
+module unload python mdsplus
+module load mamba
+mamba activate /fusion/projects/results/ionorbgpu/workflow_files/globus_env
 cd fusion_compute/endpoint_configs
 globus-compute-endpoint configure --endpoint-config omega_short_config.yaml omega_short
 globus-compute-endpoint start omega_short
@@ -69,6 +71,24 @@ Copy the compute endpoint ID.
 
 ## 4. Setup on Perlmutter
 
+Login to Perlmutter.
+
+First clone this repo:
+
+```bash
+git clone git@github.com:cms21/fusion_compute.git
+```
+
+Load the globus module and configure the compute endpoint:
+
+```bash
+module load python
+source activate /global/common/software/m3739/perlmutter/conda_envs/globus
+cd fusion_compute/endpoint_configs
+globus-compute-endpoint configure --endpoint-config perlmutter_config_template.yaml perlmutter
+globus-compute-endpoint start perlmutter
+globus-compute-endpoint list
+```
 
 ## 5. Setup on Local Machine
 
@@ -80,9 +100,10 @@ git clone git@github.com:cms21/fusion_compute.git
 
 ### 2. Install
 
-Create a conda module or a python virtual environment.  Install this package and its dependencies.
+Create a conda module or a python virtual environment with python 3.9.  Install this package and its dependencies.
 
 ```bash
+conda create -n globus python==3.9
 cd fusion_compute
 pip install -e .
 ```
@@ -92,11 +113,51 @@ pip install -e .
 ```bash
 cp fusion.env_template fusion.env
 ```
-Edit `fusion.env`.  Paste in your compute endpoint ids.
+
+Edit `fusion.env`.  Paste in your client id and compute endpoint ids.  Paste your Globus connect personal transfer endpoint on Omega into `GLOBUS_TRANSFER_ENDPOINT_SRC`.
+
+```bash
+# Create a Client ID for your project at developers.globus.org
+CLIENT_ID=
+
+# Facility transfer endpoints, these will not change
+GLOBUS_ALCF_EAGLE='05d2c76a-e867-4f67-aa57-76edeb0beda0'
+GLOBUS_ALCF_HOME='9032dd3a-e841-4687-a163-2720da731b5b'
+GLOBUS_ALCF_GRAND='3caddd4a-bb35-4c3d-9101-d9a0ad7f3a30'
+GLOBUS_NERSC_PERLMUTTER='6bdc7956-fc0f-4ad2-989c-7aa5ee643a79'
+
+# Compute endpoints that the user needs to set up with sample configs
+GLOBUS_COMPUTE_POLARIS_ENDPOINT=
+GLOBUS_COMPUTE_PERLMUTTER_ENDPOINT=
+GLOBUS_COMPUTE_OMEGA_LOCAL_ENDPOINT=
+
+# Input transfer source endpoint
+GLOBUS_TRANSFER_ENDPOINT_SRC=
+```
 
 ### 4. Machine settings
 
 In [machine_settings.py](fusion_compute/machine_settings.py), edit any necessary paths on the machines you are using.
+
+Change the `scratch_path` for each machine to a place where you have write permission on that machine.  This is where results will be written.
+
+```python
+machine_settings = {"polaris":{"transfer_endpoint": os.getenv("GLOBUS_ALCF_EAGLE"),
+                                    "compute_endpoint": os.getenv("GLOBUS_COMPUTE_POLARIS_ENDPOINT"),
+                                    "bin_path": "/eagle/IRIBeta/fusion/bin",
+                                    "scratch_path": "/IRIBeta/fusion/",
+                                    "facility": "alcf"},
+                    "perlmutter":{"transfer_endpoint": os.getenv("GLOBUS_NERSC_PERLMUTTER"),
+                                    "compute_endpoint": os.getenv("GLOBUS_COMPUTE_PERLMUTTER_ENDPOINT"),
+                                    "bin_path": "/global/common/software/m3739/perlmutter/ionorb/bin/",
+                                    "scratch_path": "/pscratch/sd/c/csimpson", ### User needs to change this!
+                                    "facility": "nersc"},
+                    "omega":{"transfer_endpoint": os.getenv("GLOBUS_D3D"),
+                                    "compute_endpoint": os.getenv("GLOBUS_COMPUTE_OMEGA_SHORT_ENDPOINT"),
+                                    "bin_path": "/fusion/projects/codes/ionorb/bin",
+                                    "scratch_path": "/home/simpsonc", ### User needs to change this!
+                                    "facility": "d3d"}}
+```
 
 ### 5. Test functions.
 
@@ -115,12 +176,12 @@ python functions.py --test --machine polaris
 
 You may be prompted to validate your credentials with Globus if this is your first time running a Globus Compute function. 
 
-Note that these tests will appear to hang while your job is queued on the machine scheduler.  For this first test, check to see if your job has been created.
+Note that these tests will appear to hang while your job is queued on the machine scheduler.  For this first test, check to see if your job has been created on the scheduler.
 
 ### 6. Register your functions
 
 ```bash
-cd fusion_compute
+cd fusion_compute/fusion_compute
 python functions.py
 ```
 
@@ -129,7 +190,7 @@ You should see the function ids appear in fusion.env.
 ### 7. Set up the flow and establish authentication with the Globus Service.
 
 ```bash
-cd fusion_compute
+cd fusion_compute/fusion_compute
 python register_flow.py
 ```
 
@@ -140,7 +201,7 @@ You should see the Flow id appear in fusion.env.
 ### 8. Test the flow.
 
 ```bash
-cd fusion_compute
+cd fusion_compute/fusion_compute
 python start_fusion_flow.py --source_path <SRC_PATH> --destination_path <DEST_PATH> --return_path <RET_PATH>
 ```
 `<SRC_PATH>` and `<RET_PATH>` are paths on Omega (where the input files are created and where results are returned at the end of the flow).
@@ -152,7 +213,9 @@ python start_fusion_flow.py --source_path <SRC_PATH> --destination_path <DEST_PA
 
 There's a trigger bash script that wraps around `start_fusion_flow.py`, [d3d_trigger.sh](d3d_trigger.sh).  This could be used to bundle the flow with the local execution of IDL scripts.
 
-You can run the trigger script like this
+Edit the SRC_PATH and RET_PATH in the script to a place on Omega where you have write permissions.  
+
+After editing the paths, you can run the trigger script like this
 ```bash
 d3d_trigger.sh --machine <MACHINE> --dynamic
 ```
@@ -198,3 +261,7 @@ For example:
 ```bash
 python plot_performance.py --test-label DHtaGbRZ
 ```
+
+## Troubleshooting
+
+TBD

@@ -189,11 +189,10 @@ if __name__ == '__main__':
             params = []
             kwargs = {}
             if function == ionorb_wrapper:
-                params= ["/eagle/IRIBeta/csimpson/fusion_ionorb_slice_tests/s164869",
+                params= [os.path.join(settings["scratch_path"],"test_runs/test"),
                          "/eagle/IRIBeta/fusion/bin"]
             elif function == make_input_scripts:
                 params= [os.path.join(settings["scratch_path"],"test_functions/make_input_scripts")]
-                kwargs = {'shot':172578, 'stime':2600}
             elif function == heatmapping:
                 params= [settings["bin_path"], 
                          os.path.join(settings["scratch_path"],"test_runs/test")]

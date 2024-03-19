@@ -15,11 +15,6 @@ def machine_settings():
                                         "bin_path": "/global/common/software/m3739/perlmutter/ionorb/bin/",
                                         "scratch_path": "/pscratch/sd/c/csimpson", ### User needs to change this!
                                         "facility": "nersc"},
-                        "summit":{"transfer_endpoint": os.getenv("GLOBUS_OLCF"),
-                                "compute_endpoint": os.getenv("GLOBUS_COMPUTE_SUMMIT_ENDPOINT"),
-                                "bin_path": "/ccs/home/simpson/bin/",
-                                "scratch_path": "/gpfs/alpine2/gen008/scratch/simpson/", ### User needs to change this!
-                                "facility": "olcf"},
                         "omega":{"transfer_endpoint": os.getenv("GLOBUS_D3D"),
                                 "compute_endpoint": os.getenv("GLOBUS_COMPUTE_OMEGA_SHORT_ENDPOINT"),
                                 "bin_path": "/fusion/projects/codes/ionorb/bin",
