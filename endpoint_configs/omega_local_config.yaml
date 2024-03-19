@@ -5,5 +5,5 @@ engine:
     max_blocks: 1
     min_blocks: 0
     type: LocalProvider
-    worker_init: "module unload python; module unload mdsplus; module load mamba; mamba activate globus; export PATH=/fusion/projects/codes/ionorbgpu/bin:$PATH; export PATH=/fusion/projects/codes/ionorbgpu/tools:$PATH; export EP_DIR=/fusion/projects/toolbox/energetic_particles; export IONORB_DIR=/fusion/projects/codes/ionorbgpu; export IDL_PATH=$IDL_PATH:/fusion/projects/toolbox/energetic_particles/idl_lib; module load mdsplus"
+    worker_init: module unload python; module unload mdsplus; module use /fusion/projects/results/ionorbgpu/workflow_files/css-omega-modules; module load adas; module load ep; module load mamba; mamba activate /fusion/projects/results/ionorbgpu/workflow_files/globus_env; export PATH=/fusion/projects/codes/ionorbgpu/bin:$PATH; export PATH=/fusion/projects/codes/ionorbgpu/tools:$PATH; export EP_DIR=/fusion/projects/toolbox/energetic_particles; export IONORB_DIR=/fusion/projects/codes/ionorbgpu; export IDL_PATH=$IDL_PATH:/fusion/projects/toolbox/energetic_particles/idl_lib; module load mdsplus
   type: HighThroughputEngine

@@ -58,6 +58,7 @@ if __name__ == '__main__':
     else:
         flow = fc.get_flow(flow_id)
         if flow['definition'] != fusion_flow_definition:
+            reset_scopes = True
             fc.update_flow(flow_id, definition=fusion_flow_definition)
             print("Updated flow defintion")
 

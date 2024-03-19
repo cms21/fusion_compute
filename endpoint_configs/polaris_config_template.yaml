@@ -4,6 +4,7 @@ engine:
     type: address_by_interface
   available_accelerators: 4
   cpu_affinity: 'list:24-31:16-23:8-15:0-7'
+  max_retries_on_system_failure: 2
   prefetch_capacity: 0
   provider:
     account: IRIBeta
