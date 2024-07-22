@@ -21,7 +21,8 @@ engine:
     walltime: 00:30:00
     worker_init: module load python; source activate /global/common/software/m3739/perlmutter/conda_envs/globus; PATH=$PATH:/global/
 common/software/m3739/perlmutter/ionorb/bin/; cd $HOME/.globus_compute/perlmutter
-  strategy:
+  strategy: simple
+  job_status_kwargs:
     max_idletime: 300
-    type: SimpleStrategy
+    strategy_period: 60
   type: GlobusComputeEngine
