@@ -22,8 +22,9 @@ engine:
     select_options: ngpus=4
     type: PBSProProvider
     walltime: 00:60:00
-    worker_init: module load conda; conda activate /eagle/IRIBeta/fusion/fusion_env; export PATH=$PATH:/eagle/IRIBeta/fusion/bin/; cd $HOME/.globus_compute/polaris
-  strategy:
+    worker_init: module use /soft/modulefiles; module load conda; conda activate /eagle/IRIBeta/fusion/fusion_env; export PATH=$PATH:/eagle/IRIBeta/fusion/bin/; cd $HOME/.globus_compute/polaris
+  strategy: simple
+  job_status_kwargs:
     max_idletime: 300
-    type: SimpleStrategy
+    strategy_period: 60
   type: GlobusComputeEngine

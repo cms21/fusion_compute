@@ -4,6 +4,7 @@ engine:
     type: address_by_interface
   available_accelerators: 6
   cpu_affinity: block
+  max_retries_on_system_failure: 2
   prefetch_capacity: 0
   provider:
     project: GEN008
@@ -20,9 +21,10 @@ engine:
     walltime: 00:10:00
     # Here, activate conda module and set path to executable
     worker_init: module load python; source activate fusion; export PATH=$PATH:/ccs/home/simpson/bin/
-  strategy:
+  strategy: simple
+  job_status_kwargs:
     max_idletime: 300
-    type: SimpleStrategy
+    strategy_period: 60
   type: GlobusComputeEngine
   worker_logdir_root: $MEMBERWORK/gen008
   #worker_port_range: (50000, 55000)

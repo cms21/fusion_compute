@@ -16,7 +16,8 @@ engine:
     type: SlurmProvider
     walltime: 00:10:00
     worker_init: module unload python; module unload mdsplus; module use /fusion/projects/results/ionorbgpu/workflow_files/css-omega-modules; module load adas; module load ep; module load mamba; mamba activate /fusion/projects/results/ionorbgpu/workflow_files/globus_env; export PATH=/fusion/projects/codes/ionorbgpu/bin:$PATH; export PATH=/fusion/projects/codes/ionorbgpu/tools:$PATH; export EP_DIR=/fusion/projects/toolbox/energetic_particles; export IONORB_DIR=/fusion/projects/codes/ionorbgpu; export IDL_PATH=$IDL_PATH:/fusion/projects/toolbox/energetic_particles/idl_lib; module load mdsplus
-  strategy:
+  strategy: simple
+  job_status_kwargs:
     max_idletime: 300
-    type: SimpleStrategy
+    strategy_period: 60
   type: GlobusComputeEngine
